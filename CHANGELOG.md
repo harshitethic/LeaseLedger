@@ -1,4 +1,4 @@
-## Unreleased — v0.1.1
+## 0.1.1 — 2026-10-14
 
 - Added consistency-checked SQLite online backup with no-overwrite publication, symlink protection, private temporary files, sidecar cleanup and atomic publication
 - Added verify and backup CLI operations and an operational restore runbook
