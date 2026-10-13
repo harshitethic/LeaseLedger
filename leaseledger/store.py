@@ -1,0 +1,331 @@
+"""LeaseLedger: SQLite-backed, multi-process durable work queue.
+
+Guarantee: *at-least-once* delivery. Leases, attempt counters, immutable fence
+tokens, transactions and an event journal support crashes and stale workers.
+Not a cross-machine distributed queue: SQLite requires a reliable local FS.
+"""
+
+from __future__ import annotations
+
+import json
+import math
+import os
+import sqlite3
+import time
+from contextlib import contextmanager
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Callable, Iterator
+
+
+@dataclass(frozen=True)
+class Lease:
+    job_id: int
+    topic: str
+    payload: Any
+    owner: str
+    fence: int
+    attempt: int
+    expires_at: float
+
+
+@dataclass(frozen=True)
+class EnqueueResult:
+    job_id: int
+    created: bool
+
+
+class Store:
+    """Multi-process queue with transactionally fenced acknowledgements."""
+
+    def __init__(self, path: str | Path, *, clock: Callable[[], float] = time.time):
+        self.path = Path(path)
+        self.clock = clock
+        if not self.path.parent.is_dir():
+            raise ValueError("Database parent directory must already exist")
+        try:
+            fd = os.open(str(self.path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        except FileExistsError:
+            pass
+        else:
+            os.close(fd)
+        self.initialize()
+
+    def _now(self) -> float:
+        value = float(self.clock())
+        if not math.isfinite(value) or value < 0:
+            raise ValueError("Clock must return a positive finite Unix timestamp")
+        return value
+
+    @contextmanager
+    def _connection(self) -> Iterator[sqlite3.Connection]:
+        connection = sqlite3.connect(str(self.path), timeout=15, isolation_level=None)
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA busy_timeout = 15000")
+        connection.execute("PRAGMA foreign_keys = ON")
+        try:
+            yield connection
+        finally:
+            connection.close()
+
+    @contextmanager
+    def _write(self) -> Iterator[sqlite3.Connection]:
+        with self._connection() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                yield connection
+                connection.commit()
+            except BaseException:
+                connection.rollback()
+                raise
+
+    def initialize(self) -> None:
+        with self._connection() as db:
+            db.execute("PRAGMA journal_mode = WAL")
+            db.executescript("""
+                CREATE TABLE IF NOT EXISTS jobs (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  topic TEXT NOT NULL,
+                  payload TEXT NOT NULL,
+                  status TEXT NOT NULL CHECK(status IN ('queued','leased','done','dead')),
+                  priority INTEGER NOT NULL DEFAULT 0,
+                  available_at REAL NOT NULL,
+                  attempts INTEGER NOT NULL DEFAULT 0,
+                  max_attempts INTEGER NOT NULL,
+                  lease_owner TEXT,
+                  lease_until REAL,
+                  fence INTEGER NOT NULL DEFAULT 0,
+                  dedupe_key TEXT UNIQUE,
+                  last_error TEXT,
+                  created_at REAL NOT NULL,
+                  updated_at REAL NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS jobs_ready
+                    ON jobs(status, priority DESC, available_at, id);
+                CREATE INDEX IF NOT EXISTS jobs_leases
+                    ON jobs(status, lease_until);
+                CREATE TABLE IF NOT EXISTS events (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  job_id INTEGER NOT NULL REFERENCES jobs(id) ON DELETE RESTRICT,
+                  action TEXT NOT NULL,
+                  actor TEXT,
+                  details TEXT,
+                  occurred_at REAL NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS events_job ON events(job_id,id);
+            """)
+
+    @staticmethod
+    def _encode(payload: Any) -> str:
+        text = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+        if len(text.encode("utf-8")) > 65536:
+            raise ValueError("Job payload exceeds 64 KiB")
+        return text
+
+    @staticmethod
+    def _event(
+        db: sqlite3.Connection, job_id: int, action: str, actor: str | None, details: str | None, now: float
+    ) -> None:
+        db.execute(
+            "INSERT INTO events (job_id, action, actor, details, occurred_at) VALUES (?,?,?,?,?)",
+            (job_id, action, actor, details[:500] if details else None, now),
+        )
+
+    def enqueue(
+        self,
+        topic: str,
+        payload: Any,
+        *,
+        key: str | None = None,
+        priority: int = 0,
+        max_attempts: int = 3,
+        delay: float = 0,
+    ) -> EnqueueResult:
+        if not 1 <= len(topic) <= 100 or not all(c.isalnum() or c in "_-.:" for c in topic):
+            raise ValueError("Invalid topic")
+        if key is not None and not 1 <= len(key) <= 200:
+            raise ValueError("Invalid idempotency key")
+        if (
+            not -1000 <= priority <= 1000
+            or not 1 <= max_attempts <= 100
+            or not math.isfinite(delay)
+            or not 0 <= delay <= 86400 * 365
+        ):
+            raise ValueError("Invalid enqueue options")
+        text = self._encode(payload)
+        now = self._now()
+        with self._write() as db:
+            cursor = db.execute(
+                """INSERT INTO jobs
+                   (topic,payload,status,priority,available_at,max_attempts,dedupe_key,created_at,updated_at)
+                   VALUES (?,?,?,?,?,?,?,?,?)
+                   ON CONFLICT(dedupe_key) DO NOTHING""",
+                (topic, text, "queued", priority, now + delay, max_attempts, key, now, now),
+            )
+            if cursor.rowcount:
+                job_id = int(cursor.lastrowid)
+                self._event(db, job_id, "enqueued", None, topic, now)
+                return EnqueueResult(job_id, True)
+            row = db.execute("SELECT id FROM jobs WHERE dedupe_key = ?", (key,)).fetchone()
+            if row is None:
+                raise RuntimeError("Idempotent enqueue violated unique key lookup")
+            return EnqueueResult(int(row["id"]), False)
+
+    def claim(self, owner: str, *, lease_seconds: float = 30, topic: str | None = None) -> Lease | None:
+        if not 1 <= len(owner) <= 100 or not 1 <= lease_seconds <= 86400 or not math.isfinite(lease_seconds):
+            raise ValueError("Invalid lease parameters")
+        if topic is not None and not 1 <= len(topic) <= 100:
+            raise ValueError("Invalid topic")
+        now = self._now()
+        with self._write() as db:
+            # Process expired final-attempt leases in the same transaction.
+            # This prevents infinite retries after repeated worker crashes.
+            for _ in range(100):
+                predicate = "" if topic is None else " AND topic = :topic"
+                row = db.execute(
+                    f"""SELECT * FROM jobs WHERE
+                        ((status='queued' AND available_at<=:now)
+                        OR (status='leased' AND lease_until<=:now)){predicate}
+                        ORDER BY priority DESC, COALESCE(lease_until,available_at) ASC, id ASC
+                        LIMIT 1""",
+                    {"now": now, "topic": topic},
+                ).fetchone()
+                if row is None:
+                    return None
+                job_id = int(row["id"])
+                if row["status"] == "leased" and row["attempts"] >= row["max_attempts"]:
+                    db.execute(
+                        """UPDATE jobs SET status='dead', lease_owner=NULL, lease_until=NULL,
+                           last_error='Lease expired after maximum attempts', updated_at=?
+                           WHERE id=?""",
+                        (now, job_id),
+                    )
+                    self._event(
+                        db, job_id, "dead", str(row["lease_owner"]), "expired after max attempts", now
+                    )
+                    continue
+
+                fence = int(row["fence"]) + 1
+                attempt = int(row["attempts"]) + 1
+                until = now + lease_seconds
+                db.execute(
+                    """UPDATE jobs SET status='leased', lease_owner=?, lease_until=?,
+                       fence=?, attempts=?, updated_at=? WHERE id=?""",
+                    (owner, until, fence, attempt, now, job_id),
+                )
+                self._event(db, job_id, "claimed", owner, f"fence={fence},attempt={attempt}", now)
+                return Lease(
+                    job_id, str(row["topic"]), json.loads(row["payload"]), owner, fence, attempt, until
+                )
+            return None
+
+    def _valid_lease_update(
+        self, db: sqlite3.Connection, lease: Lease, now: float, update: str, args: tuple[Any, ...]
+    ) -> bool:
+        cursor = db.execute(
+            f"""UPDATE jobs SET {update}
+                WHERE id=? AND status='leased' AND lease_owner=?
+                AND fence=? AND lease_until>?""",
+            (*args, lease.job_id, lease.owner, lease.fence, now),
+        )
+        return cursor.rowcount == 1
+
+    def heartbeat(self, lease: Lease, *, extend_seconds: float = 30) -> bool:
+        if not math.isfinite(extend_seconds) or not 1 <= extend_seconds <= 86400:
+            raise ValueError("Invalid heartbeat interval")
+        now = self._now()
+        with self._write() as db:
+            ok = self._valid_lease_update(
+                db,
+                lease,
+                now,
+                "lease_until=MAX(lease_until,?), updated_at=?",
+                (now + extend_seconds, now),
+            )
+            if ok:
+                self._event(db, lease.job_id, "heartbeat", lease.owner, None, now)
+            return ok
+
+    def complete(self, lease: Lease) -> bool:
+        now = self._now()
+        with self._write() as db:
+            ok = self._valid_lease_update(
+                db,
+                lease,
+                now,
+                "status='done', lease_owner=NULL, lease_until=NULL, updated_at=?",
+                (now,),
+            )
+            if ok:
+                self._event(db, lease.job_id, "completed", lease.owner, None, now)
+            return ok
+
+    def fail(self, lease: Lease, reason: str, *, base_delay: float = 1.0, max_delay: float = 3600.0) -> bool:
+        if (
+            not math.isfinite(base_delay)
+            or not math.isfinite(max_delay)
+            or base_delay < 0
+            or max_delay < base_delay
+        ):
+            raise ValueError("Invalid backoff settings")
+        now = self._now()
+        reason = reason[:500]
+        with self._write() as db:
+            row = db.execute(
+                """SELECT attempts,max_attempts FROM jobs WHERE id=? AND status='leased'
+                   AND lease_owner=? AND fence=? AND lease_until>?""",
+                (lease.job_id, lease.owner, lease.fence, now),
+            ).fetchone()
+            if row is None:
+                return False
+            is_dead = int(row["attempts"]) >= int(row["max_attempts"])
+            delay = min(max_delay, base_delay * 2 ** min(int(row["attempts"]) - 1, 30))
+            db.execute(
+                """UPDATE jobs SET status=?,available_at=?,lease_owner=NULL,
+                   lease_until=NULL,last_error=?,updated_at=? WHERE id=?""",
+                ("dead" if is_dead else "queued", now if is_dead else now + delay, reason, now, lease.job_id),
+            )
+            self._event(db, lease.job_id, "dead" if is_dead else "retry", lease.owner, reason, now)
+            return True
+
+    def requeue_dead(self, job_id: int) -> bool:
+        now = self._now()
+        with self._write() as db:
+            changed = (
+                db.execute(
+                    """UPDATE jobs SET status='queued',attempts=0,available_at=?,
+                   lease_owner=NULL,lease_until=NULL,last_error=NULL,updated_at=?
+                   WHERE id=? AND status='dead'""",
+                    (now, now, job_id),
+                ).rowcount
+                == 1
+            )
+            if changed:
+                self._event(db, job_id, "requeued", None, None, now)
+            return changed
+
+    def get(self, job_id: int) -> dict[str, Any] | None:
+        with self._connection() as db:
+            row = db.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
+            if row is None:
+                return None
+            result = dict(row)
+            result["payload"] = json.loads(result["payload"])
+            return result
+
+    def events(self, job_id: int) -> list[dict[str, Any]]:
+        with self._connection() as db:
+            return [
+                dict(x)
+                for x in db.execute(
+                    "SELECT action,actor,details,occurred_at FROM events WHERE job_id=? ORDER BY id",
+                    (job_id,),
+                )
+            ]
+
+    def stats(self) -> dict[str, int]:
+        result = {name: 0 for name in ("queued", "leased", "done", "dead")}
+        with self._connection() as db:
+            for row in db.execute("SELECT status,COUNT(*) AS count FROM jobs GROUP BY status"):
+                result[str(row["status"])] = int(row["count"])
+        return result
