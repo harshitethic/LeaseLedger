@@ -1,3 +1,10 @@
+## Unreleased — v0.1.1
+
+- Added consistency-checked SQLite online backup with no-overwrite publication, symlink protection, private temporary files, sidecar cleanup and atomic publication
+- Added verify and backup CLI operations and an operational restore runbook
+- Added seven backup/integrity regressions and a real abrupt worker-crash test
+- Expanded from 22 to 30 tests with no new runtime dependencies
+
 # Changelog
 
 ## 0.1.0 — 2026-10-14

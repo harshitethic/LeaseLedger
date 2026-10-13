@@ -21,7 +21,7 @@ A naïve background-job runner loses tasks on crash and can let an expired worke
 | Backoff and dead-letter | Bounded exponential retry; final failures persist for inspection |
 | Worker heartbeat | Extends a lease while the trusted handler works |
 | Event journal | Enqueued, claimed, heartbeat, retry, dead, completed, requeued |
-| Operational CLI | Enqueue, work, get, events, stats, dead-letter requeue |
+| Operational CLI | Enqueue, work, get, events, stats, dead-letter requeue, verify and backup |
 | Verifiable correctness | Deterministic fake-clock tests, real multi-process race test and worker tests |
 
 ## Quick start
@@ -88,9 +88,30 @@ python3 -m unittest discover -s tests -v
 python3 -m compileall -q leaseledger
 ```
 
-The multiprocess integration test starts **four separate Python processes**, has them compete for **48 jobs** using one on-disk SQLite database, and verifies every job is completed once in the absence of worker crashes. It also tests stale fences after reclaim and expiry; this result **does not imply exactly-once side effects** in general.
+The multiprocess tests start **four separate Python processes**, have them
+compete for **48 jobs** using one on-disk SQLite database, and verify each job
+completes once in that no-fault run. A separate test **abruptly terminates a
+worker process** after a claim and verifies the expired job is reclaimed with a
+new fence. These tests **do not imply exactly-once external side effects**.
 
 GitHub Actions runs the suite against Python 3.11, 3.12 and 3.13: [view CI](https://github.com/harshitethic/LeaseLedger/actions/workflows/ci.yml).
+
+## Online backup and recovery
+
+SQLite WAL databases must not be copied with cp while workers are active.
+LeaseLedger provides a consistent online snapshot, never overwrites an existing
+backup, and verifies pages and foreign-key relationships:
+
+~~~bash
+leaseledger --db jobs.db verify
+leaseledger --db jobs.db backup /secure-backups/jobs-snapshot.db
+leaseledger --db /secure-backups/jobs-snapshot.db verify
+~~~
+
+Read the [backup and recovery runbook](docs/backup-and-recovery.md) for
+permissions, integrity checks, restoration precautions, WAL behavior and
+at-least-once replay implications. This is a manual backup command, not
+a hosted or automatically scheduled backup service.
 
 ## Reproducible benchmark
 
