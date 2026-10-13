@@ -48,6 +48,9 @@ def main(argv: list[str] | None = None) -> int:
     work.add_argument("--name")
     work.add_argument("--lease", type=float, default=30)
 
+    commands.add_parser("verify", help="Check SQLite page and foreign-key integrity")
+    backup = commands.add_parser("backup", help="Consistent online backup; never overwrites files")
+    backup.add_argument("destination", help="Path to a NEW backup file")
     commands.add_parser("stats")
     get = commands.add_parser("get")
     get.add_argument("id", type=int)
@@ -70,6 +73,13 @@ def main(argv: list[str] | None = None) -> int:
             delay=args.delay,
         )
         print(json.dumps({"job_id": outcome.job_id, "created": outcome.created}))
+    elif args.command == "verify":
+        report = queue.verify_integrity()
+        print(json.dumps(report, sort_keys=True))
+        return 0 if report["healthy"] else 1
+    elif args.command == "backup":
+        saved = queue.backup_to(args.destination)
+        print(json.dumps({"backup": str(saved), "verified": True}))
     elif args.command == "stats":
         print(json.dumps(queue.stats(), sort_keys=True))
     elif args.command == "get":

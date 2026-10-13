@@ -11,8 +11,9 @@ import json
 import math
 import os
 import sqlite3
+import tempfile
 import time
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterator
@@ -322,6 +323,73 @@ class Store:
                     (job_id,),
                 )
             ]
+
+    def verify_integrity(self) -> dict[str, Any]:
+        """Check SQLite pages and relational integrity without modifying jobs."""
+        with self._connection() as db:
+            check = str(db.execute("PRAGMA quick_check").fetchone()[0])
+            foreign_key_violations = len(db.execute("PRAGMA foreign_key_check").fetchall())
+            return {
+                "quick_check": check,
+                "foreign_key_violations": foreign_key_violations,
+                "healthy": check == "ok" and foreign_key_violations == 0,
+            }
+
+    def backup_to(self, destination: str | Path) -> Path:
+        """Write a consistent SQLite snapshot while workers may be active.
+
+        Never overwrite an existing file (including a symlink), and never
+        copy a live WAL database with shutil.copyfile. The temporary snapshot
+        is private, validated, fsynced and hard-linked into its final name so
+        another process cannot race to overwrite an existing backup.
+        """
+        target = Path(destination).absolute()
+        if not target.parent.is_dir():
+            raise ValueError("Backup parent directory must already exist")
+        if target == self.path.absolute() or target == self.path.resolve():
+            raise ValueError("Refusing to overwrite the running database")
+        fd, temporary_name = tempfile.mkstemp(
+            prefix=".leaseledger-backup-", suffix=".db", dir=str(target.parent)
+        )
+        os.close(fd)
+        temporary = Path(temporary_name)
+        try:
+            with self._connection() as source:
+                # sqlite3.Connection.__exit__ only commits/rolls back; it does
+                # NOT close the connection. Close explicitly before publish
+                # so WAL frames are checkpointed and sidecars disappear.
+                with closing(sqlite3.connect(str(temporary), timeout=15, isolation_level=None)) as snapshot:
+                    source.backup(snapshot, pages=256, sleep=0.1)
+                    if snapshot.execute("PRAGMA quick_check").fetchone()[0] != "ok":
+                        raise sqlite3.DatabaseError("Snapshot integrity verification failed")
+                    if snapshot.execute("PRAGMA foreign_key_check").fetchone() is not None:
+                        raise sqlite3.DatabaseError("Snapshot foreign-key verification failed")
+                    snapshot.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                    # A standalone snapshot should not require a sidecar WAL
+                    # to be restored, so convert to rollback-journal mode.
+                    snapshot.execute("PRAGMA journal_mode=DELETE")
+            read_fd = os.open(temporary, os.O_RDONLY)
+            try:
+                os.fsync(read_fd)
+            finally:
+                os.close(read_fd)
+            # Link is atomic and fails if destination exists, even when it is
+            # a symlink. os.replace would silently overwrite prior backups.
+            os.link(temporary, target)
+            try:
+                directory_fd = os.open(target.parent, os.O_RDONLY)
+                try:
+                    os.fsync(directory_fd)
+                finally:
+                    os.close(directory_fd)
+            except OSError:
+                pass  # Directory sync is unavailable on some filesystems.
+            return target
+        finally:
+            temporary.unlink(missing_ok=True)
+            # Remove any unpublished transient sidecars after closing the DB.
+            for suffix in ("-wal", "-shm", "-journal"):
+                Path(str(temporary) + suffix).unlink(missing_ok=True)
 
     def stats(self) -> dict[str, int]:
         result = {name: 0 for name in ("queued", "leased", "done", "dead")}
