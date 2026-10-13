@@ -98,7 +98,7 @@ GitHub Actions runs the suite against Python 3.11, 3.12 and 3.13: [view CI](http
 python3 -m benchmarks.queue_bench --jobs 1000 --workers 4
 ```
 
-The script reports measured enqueue and completion throughput on **your machine** and checks the final queue counts. No hard-coded benchmark numbers, synthetic web-server request claims or fictional production usage are included.
+The script reports measured enqueue and completion throughput on **your machine** and checks the final queue counts. The [14 October 2026 cross-platform verification](benchmarks/VERIFICATION-2026-10-14.md) records real, one-run measurements on an Intel/Kali and Apple M1/macOS device, including a large difference in throughput. Those **minimal no-op workload** results are not production capacity, an apples-to-apples CPU comparison, or a service-level objective.
 
 ## Limitations
 
