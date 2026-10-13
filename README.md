@@ -79,7 +79,7 @@ flowchart LR
     DB -->|max retries| DLQ[Dead-letter jobs]
 ```
 
-Read [correctness and design decisions](docs/architecture.md) and [why SQLite](docs/adr/0001-sqlite.md). The audit history is persisted in the same transaction as state transitions.
+Read [correctness and design decisions](docs/architecture.md), [why SQLite](docs/adr/0001-sqlite.md), and the technical deep dive [why a lease needs fencing tokens](docs/notes/why-fencing-tokens.md). The audit history is persisted in the same transaction as state transitions.
 
 ## Tests and real concurrency evidence
 
