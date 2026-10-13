@@ -178,47 +178,51 @@ class Store:
         if topic is not None and not 1 <= len(topic) <= 100:
             raise ValueError("Invalid topic")
         now = self._now()
-        with self._write() as db:
-            # Process expired final-attempt leases in the same transaction.
-            # This prevents infinite retries after repeated worker crashes.
-            for _ in range(100):
-                predicate = "" if topic is None else " AND topic = :topic"
-                row = db.execute(
-                    f"""SELECT * FROM jobs WHERE
-                        ((status='queued' AND available_at<=:now)
-                        OR (status='leased' AND lease_until<=:now)){predicate}
-                        ORDER BY priority DESC, COALESCE(lease_until,available_at) ASC, id ASC
-                        LIMIT 1""",
-                    {"now": now, "topic": topic},
-                ).fetchone()
-                if row is None:
-                    return None
-                job_id = int(row["id"])
-                if row["status"] == "leased" and row["attempts"] >= row["max_attempts"]:
-                    db.execute(
-                        """UPDATE jobs SET status='dead', lease_owner=NULL, lease_until=NULL,
-                           last_error='Lease expired after maximum attempts', updated_at=?
-                           WHERE id=?""",
-                        (now, job_id),
-                    )
-                    self._event(
-                        db, job_id, "dead", str(row["lease_owner"]), "expired after max attempts", now
-                    )
-                    continue
+        while True:
+            with self._write() as db:
+                # Process at most 100 expired final-attempt leases per transaction.
+                # Commit each batch; do not report queue empty after 100 tombstones.
+                for _ in range(100):
+                    predicate = "" if topic is None else " AND topic = :topic"
+                    row = db.execute(
+                        f"""SELECT * FROM jobs WHERE
+                            ((status='queued' AND available_at<=:now)
+                            OR (status='leased' AND lease_until<=:now)){predicate}
+                            ORDER BY priority DESC, COALESCE(lease_until,available_at) ASC, id ASC
+                            LIMIT 1""",
+                        {"now": now, "topic": topic},
+                    ).fetchone()
+                    if row is None:
+                        return None
+                    job_id = int(row["id"])
+                    if row["status"] == "leased" and row["attempts"] >= row["max_attempts"]:
+                        db.execute(
+                            """UPDATE jobs SET status='dead', lease_owner=NULL, lease_until=NULL,
+                               last_error='Lease expired after maximum attempts', updated_at=?
+                               WHERE id=?""",
+                            (now, job_id),
+                        )
+                        self._event(
+                            db, job_id, "dead", str(row["lease_owner"]), "expired after max attempts", now
+                        )
+                        continue
 
-                fence = int(row["fence"]) + 1
-                attempt = int(row["attempts"]) + 1
-                until = now + lease_seconds
-                db.execute(
-                    """UPDATE jobs SET status='leased', lease_owner=?, lease_until=?,
-                       fence=?, attempts=?, updated_at=? WHERE id=?""",
-                    (owner, until, fence, attempt, now, job_id),
-                )
-                self._event(db, job_id, "claimed", owner, f"fence={fence},attempt={attempt}", now)
-                return Lease(
-                    job_id, str(row["topic"]), json.loads(row["payload"]), owner, fence, attempt, until
-                )
-            return None
+                    fence = int(row["fence"]) + 1
+                    attempt = int(row["attempts"]) + 1
+                    until = now + lease_seconds
+                    db.execute(
+                        """UPDATE jobs SET status='leased', lease_owner=?, lease_until=?,
+                           fence=?, attempts=?, updated_at=? WHERE id=?""",
+                        (owner, until, fence, attempt, now, job_id),
+                    )
+                    self._event(db, job_id, "claimed", owner, f"fence={fence},attempt={attempt}", now)
+                    return Lease(
+                        job_id, str(row["topic"]), json.loads(row["payload"]), owner, fence, attempt, until
+                    )
+            # All 100 selected leases had exhausted attempts. Commit the
+            # cleanup batch and keep searching instead of returning None.
+            # Otherwise a worker using stop_when_empty=True can terminate
+            # despite lower-priority jobs being ready.
 
     def _valid_lease_update(
         self, db: sqlite3.Connection, lease: Lease, now: float, update: str, args: tuple[Any, ...]

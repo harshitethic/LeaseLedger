@@ -79,6 +79,8 @@ flowchart LR
     DB -->|max retries| DLQ[Dead-letter jobs]
 ```
 
+Read the [100-expired-leases failure analysis](docs/notes/expired-lease-cleanup-progress.md).
+
 Read [correctness and design decisions](docs/architecture.md), [why SQLite](docs/adr/0001-sqlite.md), and the technical deep dive [why a lease needs fencing tokens](docs/notes/why-fencing-tokens.md). The audit history is persisted in the same transaction as state transitions.
 
 ## Tests and real concurrency evidence
@@ -94,7 +96,7 @@ completes once in that no-fault run. A separate test **abruptly terminates a
 worker process** after a claim and verifies the expired job is reclaimed with a
 new fence. These tests **do not imply exactly-once external side effects**.
 
-GitHub Actions runs the suite against Python 3.11, 3.12 and 3.13: [view CI](https://github.com/harshitethic/LeaseLedger/actions/workflows/ci.yml).
+GitHub Actions runs the suite (32 tests, including a seeded 640-operation reference model) against Python 3.11, 3.12 and 3.13: [view CI](https://github.com/harshitethic/LeaseLedger/actions/workflows/ci.yml).
 
 ## Online backup and recovery
 
