@@ -1,0 +1,45 @@
+{
+  "demo": "deterministic_offline_recovery",
+  "project": "LeaseLedger",
+  "scope": "single-host SQLite; at-least-once; no external side effect",
+  "steps": [
+    {
+      "created_duplicate": false,
+      "created_first": true,
+      "same_job_id": true,
+      "step": "idempotent_enqueue"
+    },
+    {
+      "attempt": 1,
+      "fence": 1,
+      "owner": "worker-A",
+      "step": "claim"
+    },
+    {
+      "current_ack_accepted": true,
+      "old_ack_accepted": false,
+      "replacement_attempt": 2,
+      "replacement_fence": 2,
+      "replacement_owner": "worker-B",
+      "step": "expired_lease_reclaimed"
+    },
+    {
+      "backup_consistent": true,
+      "event_actions": [
+        "enqueued",
+        "claimed",
+        "claimed",
+        "completed"
+      ],
+      "integrity_healthy": true,
+      "queue_counts": {
+        "dead": 0,
+        "done": 1,
+        "leased": 0,
+        "queued": 0
+      },
+      "step": "verified_online_backup_restore"
+    }
+  ],
+  "verified": true
+}
