@@ -40,6 +40,22 @@ leaseledger --db jobs.db stats
 
 The example worker prints an event to stderr, and the CLI returns a JSON summary on stdout. The database is created with private `0600` file mode on Unix when possible.
 
+## One-command verified recovery demo
+
+From a source checkout, run the [working offline demonstration](docs/reproducible-demo.md):
+
+~~~bash
+python3 -m examples.recovery_walkthrough
+~~~
+
+The script creates an actual temporary SQLite database, checks producer
+deduplication, reclaims an expired lease with a new fencing token, rejects
+the previous owner's stale ACK, and verifies a consistent online backup
+and event journal. The exact output is checked into
+[recovery-demo-output.json](docs/recovery-demo-output.json) and compared
+against the command by automated tests on Python 3.11–3.13.
+**No third-party services are used or claimed.**
+
 ## Python API
 
 ```python
