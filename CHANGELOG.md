@@ -4,6 +4,7 @@
 - Calculate claim intervals, producer delays and operator requeue timestamps after lock acquisition; refresh claim time during expired-job cleanup.
 - Add six real-lock regression scenarios: each fails on the preceding implementation and passes with this fix.
 - Add Python CodeQL analysis alongside the existing correctness, packaging and benchmark CI.
+- Publish immutable GitHub releases only after all CI gates pass, with eight publication-boundary regressions.
 - No schema migration or change to the single-host, at-least-once contract.
 
 ## 0.1.2 — 2026-10-14
