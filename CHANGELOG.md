@@ -1,3 +1,11 @@
+## 0.1.3 — 2026-10-15
+
+- Sample lease-validation time after acquiring the SQLite write lock. ACK, heartbeat and failure operations now reject a lease that expires during lock contention.
+- Calculate claim intervals, producer delays and operator requeue timestamps after lock acquisition; refresh claim time during expired-job cleanup.
+- Add six real-lock regression scenarios: each fails on the preceding implementation and passes with this fix.
+- Add Python CodeQL analysis alongside the existing correctness, packaging and benchmark CI.
+- No schema migration or change to the single-host, at-least-once contract.
+
 ## 0.1.2 — 2026-10-14
 
 - Fix claim starvation when more than 100 expired terminal leases had priority over runnable work.

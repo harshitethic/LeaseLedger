@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "leaseledger"
-version = "0.1.2"
+version = "0.1.3"
 description = "Durable SQLite task queue with fenced leases, retries, and audit events"
 readme = "README.md"
 requires-python = ">=3.11"
