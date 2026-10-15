@@ -154,8 +154,8 @@ class Store:
         ):
             raise ValueError("Invalid enqueue options")
         text = self._encode(payload)
-        now = self._now()
         with self._write() as db:
+            now = self._now()
             cursor = db.execute(
                 """INSERT INTO jobs
                    (topic,payload,status,priority,available_at,max_attempts,dedupe_key,created_at,updated_at)
@@ -177,12 +177,15 @@ class Store:
             raise ValueError("Invalid lease parameters")
         if topic is not None and not 1 <= len(topic) <= 100:
             raise ValueError("Invalid topic")
-        now = self._now()
         while True:
             with self._write() as db:
                 # Process at most 100 expired final-attempt leases per transaction.
                 # Commit each batch; do not report queue empty after 100 tombstones.
                 for _ in range(100):
+                    # Lock acquisition can wait up to busy_timeout. Sample
+                    # readiness/expiry after that wait, and again after each
+                    # cleanup item, rather than granting an already-old lease.
+                    now = self._now()
                     predicate = "" if topic is None else " AND topic = :topic"
                     row = db.execute(
                         f"""SELECT * FROM jobs WHERE
@@ -238,8 +241,9 @@ class Store:
     def heartbeat(self, lease: Lease, *, extend_seconds: float = 30) -> bool:
         if not math.isfinite(extend_seconds) or not 1 <= extend_seconds <= 86400:
             raise ValueError("Invalid heartbeat interval")
-        now = self._now()
         with self._write() as db:
+            # Validate expiry only after acquiring the SQLite writer lock.
+            now = self._now()
             ok = self._valid_lease_update(
                 db,
                 lease,
@@ -252,8 +256,8 @@ class Store:
             return ok
 
     def complete(self, lease: Lease) -> bool:
-        now = self._now()
         with self._write() as db:
+            now = self._now()
             ok = self._valid_lease_update(
                 db,
                 lease,
@@ -273,9 +277,9 @@ class Store:
             or max_delay < base_delay
         ):
             raise ValueError("Invalid backoff settings")
-        now = self._now()
         reason = reason[:500]
         with self._write() as db:
+            now = self._now()
             row = db.execute(
                 """SELECT attempts,max_attempts FROM jobs WHERE id=? AND status='leased'
                    AND lease_owner=? AND fence=? AND lease_until>?""",
@@ -294,8 +298,8 @@ class Store:
             return True
 
     def requeue_dead(self, job_id: int) -> bool:
-        now = self._now()
         with self._write() as db:
+            now = self._now()
             changed = (
                 db.execute(
                     """UPDATE jobs SET status='queued',attempts=0,available_at=?,

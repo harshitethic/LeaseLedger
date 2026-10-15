@@ -16,7 +16,7 @@ stateDiagram-v2
 ### Invariants
 
 1. **Single active ownership in the queue:** `BEGIN IMMEDIATE` serializes claim transactions. Exactly one committed claim can return a given lease version. Older owners have stale fencing numbers.
-2. **Stale acknowledgements do not mutate state:** heartbeat/complete/fail check `job_id`, `owner`, current `fence`, `status='leased'`, and `lease_until > now`.
+2. **Stale acknowledgements do not mutate state:** heartbeat/complete/fail check `job_id`, `owner`, current `fence`, `status='leased'`, and `lease_until > now`, with `now` sampled after acquiring the write lock.
 3. **Crash recovery:** a leased job becomes selectable when `lease_until <= now`. If max attempts were already used, it transitions to `dead` instead.
 4. **Idempotent producer requests:** `dedupe_key` is UNIQUE, and insert+existing ID lookup occurs in one transaction. Key lifetime is the entire retained record, including dead/done.
 5. **Observable transitions:** event insert and state change share a transaction. Interrupted operations roll back, so there is no committed state without its journal entry.
@@ -29,7 +29,7 @@ stateDiagram-v2
 | Worker crashes while processing | Job is reclaimable after lease expiry; new fence |
 | Old worker resumes after reclaim | Old fence rejected by complete/fail/heartbeat |
 | Handler returns success, then worker crashes before ack | Possible duplicate external effect; use downstream idempotency |
-| DB is busy due to another writer | SQLite busy timeout (15 seconds); retry at application boundary |
+| DB is busy due to another writer | SQLite busy timeout (15 seconds); retry at application boundary. A lease that expires during the wait is rejected after acquisition |
 | Job exceeds max attempts | Persistent dead-letter record and event |
 | Producer retries same dedupe key | Existing ID returned; payload is not silently replaced |
 | Worker handler takes longer than lease | Background heartbeat extends the lease; failure is detectable |
@@ -38,7 +38,7 @@ stateDiagram-v2
 
 - SQLite WAL lets readers access persisted data while a writer commits; there is still only **one writer** at a time.
 - `jobs_ready` and `jobs_leases` are indexed for candidate selection. Load-test the actual active/expired mix at scale.
-- The claim transaction may transition up to 100 expired/maxed jobs to dead-letter; the next claim resumes. This avoids an unbounded transaction and still drains poisoned records over repeated calls.
+- Each claim transaction may transition up to 100 expired/maxed jobs to dead-letter. The same call commits that batch and continues selection; readiness time is refreshed for each candidate. This bounds each transaction, not the total claim call.
 - Backoff is `min(max_delay, base_delay * 2 ** (attempts - 1))`, bounded to avoid overflow.
 - Claims are not reservations of CPU time: worker and handler scheduling are OS-controlled.
 - Leases use a stored Unix timestamp, not a monotonic timer, so restarting processes preserves expiration, at the cost of clock-skew sensitivity.
