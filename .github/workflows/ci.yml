@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Compile source and tests
-        run: python -m compileall -q leaseledger tests
+        run: python -m compileall -q leaseledger tests scripts
       - name: Multi-process concurrency and regression tests
         run: python -m unittest discover -s tests -v
       - name: Verify packaging, CLI and reproducible recovery demonstration
@@ -56,6 +56,38 @@ jobs:
       - name: Install pinned dev linter
         run: python -m pip install "ruff==0.14.1"
       - name: Verify lint rules
-        run: ruff check leaseledger tests benchmarks examples
+        run: ruff check leaseledger tests benchmarks examples scripts
       - name: Verify consistent formatting
-        run: ruff format --check leaseledger tests benchmarks examples
+        run: ruff format --check leaseledger tests benchmarks examples scripts
+
+  security:
+    name: CodeQL gate
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    uses: ./.github/workflows/codeql.yml
+
+  release:
+    name: Publish verified version
+    needs: [test, benchmark-smoke, lint, security]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'harshitethic/LeaseLedger'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: leaseledger-version-publication
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Publish immutable version from its changelog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/publish_release.py

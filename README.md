@@ -114,7 +114,7 @@ completes once in that no-fault run. A separate test **abruptly terminates a
 worker process** after a claim and verifies the expired job is reclaimed with a
 new fence. These tests **do not imply exactly-once external side effects**.
 
-GitHub Actions runs the suite (40 tests, including a seeded 640-operation reference model) against Python 3.11, 3.12 and 3.13: [view CI](https://github.com/harshitethic/LeaseLedger/actions/workflows/ci.yml).
+GitHub Actions runs the suite (40 queue tests plus eight release-publication tests, including a seeded 640-operation reference model) against Python 3.11, 3.12 and 3.13: [view CI](https://github.com/harshitethic/LeaseLedger/actions/workflows/ci.yml).
 
 ## Online backup and recovery
 
@@ -149,6 +149,13 @@ The script reports measured enqueue and completion throughput on **your machine*
 - **Resource scale:** this design opens a SQLite connection per operation and uses a single writer. Benchmark and profile real workloads before scaling; a broker/server is appropriate at larger volumes.
 - **Wall-clock leases:** NTP jumps and host clock changes can affect timeouts. Use appropriately long leases and monitor host clock health.
 - **Operational hardening:** no hosted API, authentication service, encryption at rest, tracing backend, distributed consensus or Kubernetes controller is claimed.
+
+## Releases
+
+Main-branch releases are published only after the full CI matrix, packaging,
+benchmark smoke, lint and CodeQL gates pass. The release job checks matching
+versions and changelog notes and never moves an existing version tag.
+See the [release workflow and recovery procedure](docs/releases.md).
 
 ## Collaboration
 
