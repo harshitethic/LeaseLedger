@@ -42,7 +42,16 @@ jobs:
         with:
           python-version: "3.12"
       - name: Run measured benchmark with consistency checks
-        run: python -m benchmarks.queue_bench --jobs 80 --workers 4
+        run: |
+          python -m benchmarks.queue_bench --jobs 80 --workers 4
+          python -m benchmarks.workload_bench --jobs 24 --workers 1,2 --handler-ms 0,2 --repeats 2 --retry-every 4 > workload-smoke.json
+      - name: Preserve the measured workload report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workload-smoke-${{ github.sha }}
+          path: workload-smoke.json
+          if-no-files-found: error
+          retention-days: 14
 
 
   lint:

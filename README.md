@@ -114,7 +114,7 @@ completes once in that no-fault run. A separate test **abruptly terminates a
 worker process** after a claim and verifies the expired job is reclaimed with a
 new fence. These tests **do not imply exactly-once external side effects**.
 
-GitHub Actions runs the suite (40 queue tests plus eight release-publication tests, including a seeded 640-operation reference model) against Python 3.11, 3.12 and 3.13: [view CI](https://github.com/harshitethic/LeaseLedger/actions/workflows/ci.yml).
+GitHub Actions runs the suite (40 queue tests, eight release-publication tests and six workload-benchmark tests, including a seeded 640-operation reference model) against Python 3.11, 3.12 and 3.13: [view CI](https://github.com/harshitethic/LeaseLedger/actions/workflows/ci.yml).
 
 ## Online backup and recovery
 
@@ -140,6 +140,17 @@ python3 -m benchmarks.queue_bench --jobs 1000 --workers 4
 ```
 
 The script reports measured enqueue and completion throughput on **your machine** and checks the final queue counts. The [14 October 2026 cross-platform verification](benchmarks/VERIFICATION-2026-10-14.md) records real, one-run measurements on an Intel/Kali and Apple M1/macOS device, including a large difference in throughput. Those **minimal no-op workload** results are not production capacity, an apples-to-apples CPU comparison, or a service-level objective.
+
+For repeated workload measurements with per-operation p50/p95/p99, controlled
+handler delay, deterministic retries and complete job/event accounting:
+
+```bash
+python3 -m benchmarks.workload_bench --jobs 300 --workers 1,2,4 --handler-ms 0,5 --repeats 5 --retry-every 10 > workload.json
+```
+
+Read the [methodology, measurement definitions and recorded results](docs/workload-benchmarks.md).
+These are finite-backlog synthetic workloads, not an open-loop load test or a
+production capacity promise. CI checks consistency and cleanup without speed thresholds.
 
 ## Limitations
 
