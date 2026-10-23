@@ -137,6 +137,9 @@ a hosted or automatically scheduled backup service.
 
 ## Reproducible benchmark
 
+**Fresh 23 October 2026 Kali run:** [12 raw measured trials, configuration, per-run JSON and caveats](docs/benchmark-evidence-2026-10-23.md). These synthetic figures are not production capacity or independent review.
+
+
 ```bash
 python3 -m benchmarks.queue_bench --jobs 1000 --workers 4
 ```
