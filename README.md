@@ -6,6 +6,8 @@ LeaseLedger is a small, auditable Python library and CLI that uses SQLite Write-
 
 **Scope:** single-host/multi-process. SQLite on NFS or across servers is **not supported**. The queue does not promise exactly-once side effects, production distributed consensus, or arbitrary-code sandboxing.
 
+**Independent evaluation:** [Run the reproducible correctness review and release checklist](docs/independent-evaluation.md) · [Report a verified bug](https://github.com/harshitethic/LeaseLedger/issues/new/choose). No external-production validation is implied.
+
 ## Why this exists
 
 A naïve background-job runner loses tasks on crash and can let an expired worker acknowledge work after another worker has reclaimed it. LeaseLedger solves the local durable-queue version of these problems using one serialized write transaction for claims and a monotonically increasing **fencing token** on every claim.
