@@ -1,0 +1,972 @@
+{
+  "schema_version": 1,
+  "scope": "finite preloaded backlog; synthetic no-op/blocked-I/O handlers; single host; not production capacity",
+  "environment": {
+    "python": "3.13.12",
+    "platform": "Linux-7.1.5+kali-amd64-x86_64-with-glibc2.43",
+    "machine": "x86_64",
+    "sqlite": "3.46.1",
+    "logical_cpus": 32,
+    "affinity_cpus": 32,
+    "start_method": "spawn",
+    "source_sha256": {
+      "leaseledger/store.py": "a89fa420953cb645b4da4d702b006e650c9d343fea1d9d9805a897deb97803b9",
+      "benchmarks/workload_bench.py": "cb01161017660eee1a17f3cb6f1a88346902949b6a5ee80f0bdb5a2a3b26aacd"
+    }
+  },
+  "parameters": {
+    "jobs": 100,
+    "worker_counts": [
+      1,
+      2
+    ],
+    "handler_delays_ms": [
+      0.0,
+      5.0
+    ],
+    "repeats": 3,
+    "retry_every": 10,
+    "trial_timeout_seconds": 120,
+    "body_bytes": 512
+  },
+  "runs": [
+    {
+      "workers": 1,
+      "handler_ms": 0.0,
+      "trials": [
+        {
+          "enqueue_seconds": 0.011135477001516847,
+          "startup_seconds": 0.036331628001789795,
+          "drain_seconds": 0.032003891,
+          "worker_wall_seconds": 0.07388002400330151,
+          "completed_jobs_per_second": 3124.6200657288828,
+          "attempts": 110,
+          "latency": {
+            "enqueue_ms": {
+              "samples": 100,
+              "p50": 0.107134,
+              "p95": 0.137701,
+              "p99": 0.181616,
+              "max": 0.195757
+            },
+            "claim_ms": {
+              "samples": 110,
+              "p50": 0.162398,
+              "p95": 0.183489,
+              "p99": 0.272568,
+              "max": 0.33599
+            },
+            "handler_ms": {
+              "samples": 110,
+              "p50": 0.000135,
+              "p95": 0.000168,
+              "p99": 0.000284,
+              "max": 0.004573
+            },
+            "ack_ms": {
+              "samples": 100,
+              "p50": 0.118275,
+              "p95": 0.137343,
+              "p99": 0.157285,
+              "max": 0.207893
+            },
+            "retry_ms": {
+              "samples": 10,
+              "p50": 0.123404,
+              "p95": 0.143696,
+              "p99": 0.143696,
+              "max": 0.143696
+            },
+            "residence_ms": {
+              "samples": 100,
+              "p50": 59.105657,
+              "p95": 72.82456,
+              "p99": 75.968207,
+              "max": 76.829901
+            }
+          },
+          "completed_by_worker": [
+            100
+          ],
+          "final_stats": {
+            "queued": 0,
+            "leased": 0,
+            "done": 100,
+            "dead": 0
+          },
+          "event_counts": {
+            "claimed": 110,
+            "completed": 100,
+            "enqueued": 100,
+            "retry": 10
+          },
+          "sqlite": {
+            "journal_mode": "wal",
+            "synchronous": 2,
+            "busy_timeout": 15000,
+            "foreign_keys": 1,
+            "page_size": 4096
+          }
+        },
+        {
+          "enqueue_seconds": 0.010656327998731285,
+          "startup_seconds": 0.04151025200189906,
+          "drain_seconds": 0.031602987,
+          "worker_wall_seconds": 0.07872860600036802,
+          "completed_jobs_per_second": 3164.2578595497953,
+          "attempts": 110,
+          "latency": {
+            "enqueue_ms": {
+              "samples": 100,
+              "p50": 0.103239,
+              "p95": 0.120145,
+              "p99": 0.147863,
+              "max": 0.163275
+            },
+            "claim_ms": {
+              "samples": 110,
+              "p50": 0.161699,
+              "p95": 0.188236,
+              "p99": 0.197884,
+              "max": 0.313849
+            },
+            "handler_ms": {
+              "samples": 110,
+              "p50": 0.000141,
+              "p95": 0.00017,
+              "p99": 0.000245,
+              "max": 0.000267
+            },
+            "ack_ms": {
+              "samples": 100,
+              "p50": 0.11654,
+              "p95": 0.130792,
+              "p99": 0.141218,
+              "max": 0.150423
+            },
+            "retry_ms": {
+              "samples": 10,
+              "p50": 0.123713,
+              "p95": 0.129552,
+              "p99": 0.129552,
+              "max": 0.129552
+            },
+            "residence_ms": {
+              "samples": 100,
+              "p50": 62.800259,
+              "p95": 76.445015,
+              "p99": 79.532044,
+              "max": 80.330266
+            }
+          },
+          "completed_by_worker": [
+            100
+          ],
+          "final_stats": {
+            "queued": 0,
+            "leased": 0,
+            "done": 100,
+            "dead": 0
+          },
+          "event_counts": {
+            "claimed": 110,
+            "completed": 100,
+            "enqueued": 100,
+            "retry": 10
+          },
+          "sqlite": {
+            "journal_mode": "wal",
+            "synchronous": 2,
+            "busy_timeout": 15000,
+            "foreign_keys": 1,
+            "page_size": 4096
+          }
+        },
+        {
+          "enqueue_seconds": 0.010661292999429861,
+          "startup_seconds": 0.036432860000786604,
+          "drain_seconds": 0.032196402,
+          "worker_wall_seconds": 0.07371420799972839,
+          "completed_jobs_per_second": 3105.9371168244206,
+          "attempts": 110,
+          "latency": {
+            "enqueue_ms": {
+              "samples": 100,
+              "p50": 0.105102,
+              "p95": 0.11517,
+              "p99": 0.135289,
+              "max": 0.16272
+            },
+            "claim_ms": {
+              "samples": 110,
+              "p50": 0.163862,
+              "p95": 0.189569,
+              "p99": 0.316452,
+              "max": 0.391153
+            },
+            "handler_ms": {
+              "samples": 110,
+              "p50": 0.000145,
+              "p95": 0.000182,
+              "p99": 0.000236,
+              "max": 0.000386
+            },
+            "ack_ms": {
+              "samples": 100,
+              "p50": 0.119192,
+              "p95": 0.137281,
+              "p99": 0.168078,
+              "max": 0.18052
+            },
+            "retry_ms": {
+              "samples": 10,
+              "p50": 0.126816,
+              "p95": 0.140306,
+              "p99": 0.140306,
+              "max": 0.140306
+            },
+            "residence_ms": {
+              "samples": 100,
+              "p50": 57.790291,
+              "p95": 71.91923,
+              "p99": 75.070857,
+              "max": 75.874354
+            }
+          },
+          "completed_by_worker": [
+            100
+          ],
+          "final_stats": {
+            "queued": 0,
+            "leased": 0,
+            "done": 100,
+            "dead": 0
+          },
+          "event_counts": {
+            "claimed": 110,
+            "completed": 100,
+            "enqueued": 100,
+            "retry": 10
+          },
+          "sqlite": {
+            "journal_mode": "wal",
+            "synchronous": 2,
+            "busy_timeout": 15000,
+            "foreign_keys": 1,
+            "page_size": 4096
+          }
+        }
+      ],
+      "rate_summary": {
+        "median": 3124.6200657288828,
+        "min": 3105.9371168244206,
+        "max": 3164.2578595497953
+      }
+    },
+    {
+      "workers": 2,
+      "handler_ms": 0.0,
+      "trials": [
+        {
+          "enqueue_seconds": 0.011520156000187853,
+          "startup_seconds": 0.036394022001331905,
+          "drain_seconds": 0.030543253,
+          "worker_wall_seconds": 0.07236628900136566,
+          "completed_jobs_per_second": 3274.0454986900054,
+          "attempts": 110,
+          "latency": {
+            "enqueue_ms": {
+              "samples": 100,
+              "p50": 0.109437,
+              "p95": 0.147527,
+              "p99": 0.152693,
+              "max": 0.158449
+            },
+            "claim_ms": {
+              "samples": 110,
+              "p50": 0.136995,
+              "p95": 0.169036,
+              "p99": 0.308523,
+              "max": 3.544024
+            },
+            "handler_ms": {
+              "samples": 110,
+              "p50": 0.000129,
+              "p95": 0.000168,
+              "p99": 0.000255,
+              "max": 0.000398
+            },
+            "ack_ms": {
+              "samples": 100,
+              "p50": 0.094195,
+              "p95": 0.127756,
+              "p99": 0.134177,
+              "max": 18.59824
+            },
+            "retry_ms": {
+              "samples": 10,
+              "p50": 0.108452,
+              "p95": 0.134614,
+              "p99": 0.134614,
+              "max": 0.134614
+            },
+            "residence_ms": {
+              "samples": 100,
+              "p50": 56.228336,
+              "p95": 68.318807,
+              "p99": 70.688674,
+              "max": 71.579039
+            }
+          },
+          "completed_by_worker": [
+            31,
+            69
+          ],
+          "final_stats": {
+            "queued": 0,
+            "leased": 0,
+            "done": 100,
+            "dead": 0
+          },
+          "event_counts": {
+            "claimed": 110,
+            "completed": 100,
+            "enqueued": 100,
+            "retry": 10
+          },
+          "sqlite": {
+            "journal_mode": "wal",
+            "synchronous": 2,
+            "busy_timeout": 15000,
+            "foreign_keys": 1,
+            "page_size": 4096
+          }
+        },
+        {
+          "enqueue_seconds": 0.010708059002354275,
+          "startup_seconds": 0.0361759039988101,
+          "drain_seconds": 0.035196073,
+          "worker_wall_seconds": 0.07708739000008791,
+          "completed_jobs_per_second": 2841.2260651919887,
+          "attempts": 110,
+          "latency": {
+            "enqueue_ms": {
+              "samples": 100,
+              "p50": 0.102746,
+              "p95": 0.124326,
+              "p99": 0.152082,
+              "max": 0.186868
+            },
+            "claim_ms": {
+              "samples": 110,
+              "p50": 0.135726,
+              "p95": 0.164029,
+              "p99": 0.327879,
+              "max": 1.329929
+            },
+            "handler_ms": {
+              "samples": 110,
+              "p50": 0.000142,
+              "p95": 0.000212,
+              "p99": 0.000299,
+              "max": 0.001309
+            },
+            "ack_ms": {
+              "samples": 100,
+              "p50": 0.093454,
+              "p95": 0.10834,
+              "p99": 0.14037,
+              "max": 33.66532
+            },
+            "retry_ms": {
+              "samples": 10,
+              "p50": 0.102192,
+              "p95": 0.107149,
+              "p99": 0.107149,
+              "max": 0.107149
+            },
+            "residence_ms": {
+              "samples": 100,
+              "p50": 54.930712,
+              "p95": 66.735886,
+              "p99": 70.125862,
+              "max": 81.615262
+            }
+          },
+          "completed_by_worker": [
+            4,
+            96
+          ],
+          "final_stats": {
+            "queued": 0,
+            "leased": 0,
+            "done": 100,
+            "dead": 0
+          },
+          "event_counts": {
+            "claimed": 110,
+            "completed": 100,
+            "enqueued": 100,
+            "retry": 10
+          },
+          "sqlite": {
+            "journal_mode": "wal",
+            "synchronous": 2,
+            "busy_timeout": 15000,
+            "foreign_keys": 1,
+            "page_size": 4096
+          }
+        },
+        {
+          "enqueue_seconds": 0.010926875998848118,
+          "startup_seconds": 0.041315005997603294,
+          "drain_seconds": 0.030458295,
+          "worker_wall_seconds": 0.07752799899753882,
+          "completed_jobs_per_second": 3283.177866653403,
+          "attempts": 110,
+          "latency": {
+            "enqueue_ms": {
+              "samples": 100,
+              "p50": 0.106946,
+              "p95": 0.126203,
+              "p99": 0.138968,
+              "max": 0.15863
+            },
+            "claim_ms": {
+              "samples": 110,
+              "p50": 0.137027,
+              "p95": 0.17388,
+              "p99": 0.316032,
+              "max": 3.559784
+            },
+            "handler_ms": {
+              "samples": 110,
+              "p50": 0.000134,
+              "p95": 0.00018,
+              "p99": 0.000229,
+              "max": 0.000267
+            },
+            "ack_ms": {
+              "samples": 100,
+              "p50": 0.093116,
+              "p95": 0.12012,
+              "p99": 0.143107,
+              "max": 18.526649
+            },
+            "retry_ms": {
+              "samples": 10,
+              "p50": 0.102802,
+              "p95": 0.111935,
+              "p99": 0.111935,
+              "max": 0.111935
+            },
+            "residence_ms": {
+              "samples": 100,
+              "p50": 60.202577,
+              "p95": 72.293055,
+              "p99": 74.995877,
+              "max": 75.858226
+            }
+          },
+          "completed_by_worker": [
+            69,
+            31
+          ],
+          "final_stats": {
+            "queued": 0,
+            "leased": 0,
+            "done": 100,
+            "dead": 0
+          },
+          "event_counts": {
+            "claimed": 110,
+            "completed": 100,
+            "enqueued": 100,
+            "retry": 10
+          },
+          "sqlite": {
+            "journal_mode": "wal",
+            "synchronous": 2,
+            "busy_timeout": 15000,
+            "foreign_keys": 1,
+            "page_size": 4096
+          }
+        }
+      ],
+      "rate_summary": {
+        "median": 3274.0454986900054,
+        "min": 2841.2260651919887,
+        "max": 3283.177866653403
+      }
+    },
+    {
+      "workers": 1,
+      "handler_ms": 5.0,
+      "trials": [
+        {
+          "enqueue_seconds": 0.01268893100132118,
+          "startup_seconds": 0.046224940000684,
+          "drain_seconds": 0.765138605,
+          "worker_wall_seconds": 0.820129381998413,
+          "completed_jobs_per_second": 130.69527448559467,
+          "attempts": 110,
+          "latency": {
+            "enqueue_ms": {
+              "samples": 100,
+              "p50": 0.123148,
+              "p95": 0.154744,
+              "p99": 0.172182,
+              "max": 0.185183
+            },
+            "claim_ms": {
+              "samples": 110,
+              "p50": 0.966592,
+              "p95": 1.185116,
+              "p99": 1.32919,
+              "max": 1.398326
+            },
+            "handler_ms": {
+              "samples": 110,
+              "p50": 5.073748,
+              "p95": 5.155603,
+              "p99": 5.168749,
+              "max": 5.170544
+            },
+            "ack_ms": {
+              "samples": 100,
+              "p50": 0.944695,
+              "p95": 1.087733,
+              "p99": 1.159528,
+              "max": 1.510975
+            },
+            "retry_ms": {
+              "samples": 10,
+              "p50": 0.94016,
+              "p95": 1.119657,
+              "p99": 1.119657,
+              "max": 1.119657
+            },
+            "residence_ms": {
+              "samples": 100,
+              "p50": 433.986599,
+              "p95": 783.279183,
+              "p99": 806.143524,
+              "max": 811.54178
+            }
+          },
+          "completed_by_worker": [
+            100
+          ],
+          "final_stats": {
+            "queued": 0,
+            "leased": 0,
+            "done": 100,
+            "dead": 0
+          },
+          "event_counts": {
+            "claimed": 110,
+            "completed": 100,
+            "enqueued": 100,
+            "retry": 10
+          },
+          "sqlite": {
+            "journal_mode": "wal",
+            "synchronous": 2,
+            "busy_timeout": 15000,
+            "foreign_keys": 1,
+            "page_size": 4096
+          }
+        },
+        {
+          "enqueue_seconds": 0.012973278000572463,
+          "startup_seconds": 0.03615480900043622,
+          "drain_seconds": 0.754021128,
+          "worker_wall_seconds": 0.8075044329998491,
+          "completed_jobs_per_second": 132.62227845689756,
+          "attempts": 110,
+          "latency": {
+            "enqueue_ms": {
+              "samples": 100,
+              "p50": 0.099406,
+              "p95": 0.207086,
+              "p99": 0.218287,
+              "max": 0.221639
+            },
+            "claim_ms": {
+              "samples": 110,
+              "p50": 0.931674,
+              "p95": 1.076568,
+              "p99": 1.154711,
+              "max": 1.390687
+            },
+            "handler_ms": {
+              "samples": 110,
+              "p50": 5.068958,
+              "p95": 5.14715,
+              "p99": 5.154223,
+              "max": 5.171422
+            },
+            "ack_ms": {
+              "samples": 100,
+              "p50": 0.802168,
+              "p95": 1.055482,
+              "p99": 1.128171,
+              "max": 1.526697
+            },
+            "retry_ms": {
+              "samples": 10,
+              "p50": 0.827935,
+              "p95": 1.091901,
+              "p99": 1.091901,
+              "max": 1.091901
+            },
+            "residence_ms": {
+              "samples": 100,
+              "p50": 417.102624,
+              "p95": 760.90603,
+              "p99": 784.171597,
+              "max": 789.810358
+            }
+          },
+          "completed_by_worker": [
+            100
+          ],
+          "final_stats": {
+            "queued": 0,
+            "leased": 0,
+            "done": 100,
+            "dead": 0
+          },
+          "event_counts": {
+            "claimed": 110,
+            "completed": 100,
+            "enqueued": 100,
+            "retry": 10
+          },
+          "sqlite": {
+            "journal_mode": "wal",
+            "synchronous": 2,
+            "busy_timeout": 15000,
+            "foreign_keys": 1,
+            "page_size": 4096
+          }
+        },
+        {
+          "enqueue_seconds": 0.015944071998092113,
+          "startup_seconds": 0.04094841299956897,
+          "drain_seconds": 0.743568458,
+          "worker_wall_seconds": 0.790853769001842,
+          "completed_jobs_per_second": 134.48660836014105,
+          "attempts": 110,
+          "latency": {
+            "enqueue_ms": {
+              "samples": 100,
+              "p50": 0.107757,
+              "p95": 0.318168,
+              "p99": 0.360442,
+              "max": 0.377109
+            },
+            "claim_ms": {
+              "samples": 110,
+              "p50": 0.98987,
+              "p95": 1.303085,
+              "p99": 1.512688,
+              "max": 1.661468
+            },
+            "handler_ms": {
+              "samples": 110,
+              "p50": 5.079926,
+              "p95": 5.169575,
+              "p99": 5.188807,
+              "max": 5.191418
+            },
+            "ack_ms": {
+              "samples": 100,
+              "p50": 0.969309,
+              "p95": 1.311914,
+              "p99": 1.526995,
+              "max": 1.530798
+            },
+            "retry_ms": {
+              "samples": 10,
+              "p50": 1.057195,
+              "p95": 1.274637,
+              "p99": 1.274637,
+              "max": 1.274637
+            },
+            "residence_ms": {
+              "samples": 100,
+              "p50": 436.861158,
+              "p95": 763.052453,
+              "p99": 780.423498,
+              "max": 784.709174
+            }
+          },
+          "completed_by_worker": [
+            100
+          ],
+          "final_stats": {
+            "queued": 0,
+            "leased": 0,
+            "done": 100,
+            "dead": 0
+          },
+          "event_counts": {
+            "claimed": 110,
+            "completed": 100,
+            "enqueued": 100,
+            "retry": 10
+          },
+          "sqlite": {
+            "journal_mode": "wal",
+            "synchronous": 2,
+            "busy_timeout": 15000,
+            "foreign_keys": 1,
+            "page_size": 4096
+          }
+        }
+      ],
+      "rate_summary": {
+        "median": 132.62227845689756,
+        "min": 130.69527448559467,
+        "max": 134.48660836014105
+      }
+    },
+    {
+      "workers": 2,
+      "handler_ms": 5.0,
+      "trials": [
+        {
+          "enqueue_seconds": 0.010880950998398475,
+          "startup_seconds": 0.05181166799957282,
+          "drain_seconds": 0.317543557,
+          "worker_wall_seconds": 0.37559455699738464,
+          "completed_jobs_per_second": 314.91742721770925,
+          "attempts": 110,
+          "latency": {
+            "enqueue_ms": {
+              "samples": 100,
+              "p50": 0.105477,
+              "p95": 0.128807,
+              "p99": 0.146277,
+              "max": 0.15407
+            },
+            "claim_ms": {
+              "samples": 110,
+              "p50": 0.248858,
+              "p95": 0.408643,
+              "p99": 0.481909,
+              "max": 1.460852
+            },
+            "handler_ms": {
+              "samples": 110,
+              "p50": 5.059503,
+              "p95": 5.137647,
+              "p99": 5.172369,
+              "max": 5.193816
+            },
+            "ack_ms": {
+              "samples": 100,
+              "p50": 0.311428,
+              "p95": 0.487048,
+              "p99": 1.237586,
+              "max": 1.424589
+            },
+            "retry_ms": {
+              "samples": 10,
+              "p50": 0.35356,
+              "p95": 0.442807,
+              "p99": 0.442807,
+              "max": 0.442807
+            },
+            "residence_ms": {
+              "samples": 100,
+              "p50": 214.817132,
+              "p95": 358.411527,
+              "p99": 365.898003,
+              "max": 369.514245
+            }
+          },
+          "completed_by_worker": [
+            44,
+            56
+          ],
+          "final_stats": {
+            "queued": 0,
+            "leased": 0,
+            "done": 100,
+            "dead": 0
+          },
+          "event_counts": {
+            "claimed": 110,
+            "completed": 100,
+            "enqueued": 100,
+            "retry": 10
+          },
+          "sqlite": {
+            "journal_mode": "wal",
+            "synchronous": 2,
+            "busy_timeout": 15000,
+            "foreign_keys": 1,
+            "page_size": 4096
+          }
+        },
+        {
+          "enqueue_seconds": 0.025673762000224087,
+          "startup_seconds": 0.04699338999853353,
+          "drain_seconds": 0.360665616,
+          "worker_wall_seconds": 0.42118774900154676,
+          "completed_jobs_per_second": 277.26513303114535,
+          "attempts": 110,
+          "latency": {
+            "enqueue_ms": {
+              "samples": 100,
+              "p50": 0.280413,
+              "p95": 0.337789,
+              "p99": 0.349483,
+              "max": 0.354311
+            },
+            "claim_ms": {
+              "samples": 110,
+              "p50": 0.952677,
+              "p95": 1.056583,
+              "p99": 1.4838,
+              "max": 1.522051
+            },
+            "handler_ms": {
+              "samples": 110,
+              "p50": 5.114865,
+              "p95": 5.159317,
+              "p99": 5.176313,
+              "max": 5.184957
+            },
+            "ack_ms": {
+              "samples": 100,
+              "p50": 0.997056,
+              "p95": 1.056772,
+              "p99": 1.256983,
+              "max": 1.9513
+            },
+            "retry_ms": {
+              "samples": 10,
+              "p50": 0.947168,
+              "p95": 1.118841,
+              "p99": 1.118841,
+              "max": 1.118841
+            },
+            "residence_ms": {
+              "samples": 100,
+              "p50": 223.414701,
+              "p95": 403.666188,
+              "p99": 406.572406,
+              "max": 407.546258
+            }
+          },
+          "completed_by_worker": [
+            55,
+            45
+          ],
+          "final_stats": {
+            "queued": 0,
+            "leased": 0,
+            "done": 100,
+            "dead": 0
+          },
+          "event_counts": {
+            "claimed": 110,
+            "completed": 100,
+            "enqueued": 100,
+            "retry": 10
+          },
+          "sqlite": {
+            "journal_mode": "wal",
+            "synchronous": 2,
+            "busy_timeout": 15000,
+            "foreign_keys": 1,
+            "page_size": 4096
+          }
+        },
+        {
+          "enqueue_seconds": 0.016924784002185334,
+          "startup_seconds": 0.036429444000532385,
+          "drain_seconds": 0.387216695,
+          "worker_wall_seconds": 0.43944176999866613,
+          "completed_jobs_per_second": 258.25332763609276,
+          "attempts": 110,
+          "latency": {
+            "enqueue_ms": {
+              "samples": 100,
+              "p50": 0.167593,
+              "p95": 0.255365,
+              "p99": 0.340094,
+              "max": 0.378783
+            },
+            "claim_ms": {
+              "samples": 110,
+              "p50": 0.978759,
+              "p95": 1.144271,
+              "p99": 1.363429,
+              "max": 1.426148
+            },
+            "handler_ms": {
+              "samples": 110,
+              "p50": 5.076328,
+              "p95": 5.150292,
+              "p99": 5.156316,
+              "max": 5.156614
+            },
+            "ack_ms": {
+              "samples": 100,
+              "p50": 0.998055,
+              "p95": 1.081159,
+              "p99": 1.875022,
+              "max": 2.142145
+            },
+            "retry_ms": {
+              "samples": 10,
+              "p50": 1.03873,
+              "p95": 2.132952,
+              "p99": 2.132952,
+              "max": 2.132952
+            },
+            "residence_ms": {
+              "samples": 100,
+              "p50": 233.742732,
+              "p95": 413.388898,
+              "p99": 422.462265,
+              "max": 423.284916
+            }
+          },
+          "completed_by_worker": [
+            45,
+            55
+          ],
+          "final_stats": {
+            "queued": 0,
+            "leased": 0,
+            "done": 100,
+            "dead": 0
+          },
+          "event_counts": {
+            "claimed": 110,
+            "completed": 100,
+            "enqueued": 100,
+            "retry": 10
+          },
+          "sqlite": {
+            "journal_mode": "wal",
+            "synchronous": 2,
+            "busy_timeout": 15000,
+            "foreign_keys": 1,
+            "page_size": 4096
+          }
+        }
+      ],
+      "rate_summary": {
+        "median": 277.26513303114535,
+        "min": 258.25332763609276,
+        "max": 314.91742721770925
+      }
+    }
+  ]
+}
