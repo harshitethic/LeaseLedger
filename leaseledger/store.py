@@ -147,7 +147,9 @@ class Store:
         if key is not None and not 1 <= len(key) <= 200:
             raise ValueError("Invalid idempotency key")
         if (
-            not -1000 <= priority <= 1000
+            type(priority) is not int
+            or type(max_attempts) is not int
+            or not -1000 <= priority <= 1000
             or not 1 <= max_attempts <= 100
             or not math.isfinite(delay)
             or not 0 <= delay <= 86400 * 365
