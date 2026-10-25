@@ -154,6 +154,8 @@ class Store:
             raise ValueError("Invalid topic")
         if key is not None and (not isinstance(key, str) or not 1 <= len(key) <= 200):
             raise ValueError("Invalid idempotency key")
+        if type(priority) is not int:
+            raise ValueError("Priority must be an integer")
         if (
             not -1000 <= priority <= 1000
             or not 1 <= max_attempts <= 100

@@ -22,6 +22,12 @@ class ApiBoundaryTests(unittest.TestCase):
                 self.store.enqueue("work", {}, key=value)
         self.assertEqual(self.store.stats()["queued"], 0)
 
+    def test_priority_must_be_an_integer_not_bool_or_float(self):
+        for value in (True, False, 1.5, "2", None):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                self.store.enqueue("work", {}, priority=value)
+        self.assertTrue(self.store.enqueue("work", {}, priority=-1000).created)
+
     # INSERT_CASES
 
 if __name__ == "__main__":
