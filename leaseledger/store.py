@@ -319,7 +319,13 @@ class Store:
             self._event(db, lease.job_id, "dead" if is_dead else "retry", lease.owner, reason, now)
             return True
 
+    @staticmethod
+    def _valid_job_id(value: Any) -> bool:
+        return type(value) is int and value > 0
+
     def requeue_dead(self, job_id: int) -> bool:
+        if not self._valid_job_id(job_id):
+            raise ValueError("Job ID must be a positive integer")
         with self._write() as db:
             now = self._now()
             changed = (
@@ -336,6 +342,8 @@ class Store:
             return changed
 
     def get(self, job_id: int) -> dict[str, Any] | None:
+        if not self._valid_job_id(job_id):
+            raise ValueError("Job ID must be a positive integer")
         with self._connection() as db:
             row = db.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
             if row is None:
@@ -345,6 +353,8 @@ class Store:
             return result
 
     def events(self, job_id: int) -> list[dict[str, Any]]:
+        if not self._valid_job_id(job_id):
+            raise ValueError("Job ID must be a positive integer")
         with self._connection() as db:
             return [
                 dict(x)

@@ -64,6 +64,15 @@ class ApiBoundaryTests(unittest.TestCase):
         self.assertEqual(self.store.get(job.job_id)["status"], "leased")
         self.assertTrue(self.store.fail(lease, "temporary", base_delay=0))
 
+    def test_job_id_boundaries_are_consistent(self):
+        job = self.store.enqueue("work", {})
+        for job_id in (0, -1, True, 1.0, "1", None):
+            for method in (self.store.get, self.store.events, self.store.requeue_dead):
+                with self.subTest(job_id=job_id, method=method.__name__), self.assertRaises(ValueError):
+                    method(job_id)
+        self.assertEqual(self.store.get(job.job_id)["status"], "queued")
+        self.assertEqual(self.store.events(job.job_id)[0]["action"], "enqueued")
+
     # INSERT_CASES
 
 if __name__ == "__main__":
