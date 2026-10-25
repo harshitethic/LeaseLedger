@@ -44,11 +44,21 @@ class Worker:
             raise ValueError("Lease interval must be >=3 seconds")
         if not 0.01 <= poll_seconds <= 60:
             raise ValueError("Invalid poll interval")
-        if not math.isfinite(backoff_seconds) or not 0 <= backoff_seconds <= 3600:
+        if not callable(handler):
+            raise ValueError("Worker handler must be callable")
+        if name is not None and not Store._valid_owner(name):
+            raise ValueError("Invalid worker name")
+        if topic is not None and not Store._valid_topic(topic):
+            raise ValueError("Invalid worker topic")
+        if (
+            not isinstance(backoff_seconds, (int, float))
+            or not math.isfinite(backoff_seconds)
+            or not 0 <= backoff_seconds <= 3600
+        ):
             raise ValueError("Invalid worker backoff interval")
         self.store = store
         self.handler = handler
-        self.name = name or f"worker-{uuid.uuid4().hex[:12]}"
+        self.name = name if name is not None else f"worker-{uuid.uuid4().hex[:12]}"
         self.topic = topic
         self.lease_seconds = lease_seconds
         self.poll_seconds = poll_seconds
