@@ -1,8 +1,10 @@
 """Regression tests for invalid public API inputs and early worker validation."""
+
 import tempfile
 import unittest
 from pathlib import Path
 from leaseledger import Store, Worker
+
 
 class ApiBoundaryTests(unittest.TestCase):
     def setUp(self):
@@ -111,6 +113,7 @@ class ApiBoundaryTests(unittest.TestCase):
         self.assertEqual(self.store.claim("worker", lease_seconds=1.5).job_id, job.job_id)
 
     # INSERT_CASES
+
 
 if __name__ == "__main__":
     unittest.main()

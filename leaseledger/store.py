@@ -161,6 +161,7 @@ class Store:
         if (
             not -1000 <= priority <= 1000
             or not 1 <= max_attempts <= 100
+            or type(delay) not in (int, float)
             or not math.isfinite(delay)
             or not 0 <= delay <= 86400 * 365
         ):
@@ -264,7 +265,11 @@ class Store:
         return cursor.rowcount == 1
 
     def heartbeat(self, lease: Lease, *, extend_seconds: float = 30) -> bool:
-        if not math.isfinite(extend_seconds) or not 1 <= extend_seconds <= 86400:
+        if (
+            type(extend_seconds) not in (int, float)
+            or not math.isfinite(extend_seconds)
+            or not 1 <= extend_seconds <= 86400
+        ):
             raise ValueError("Invalid heartbeat interval")
         with self._write() as db:
             # Validate expiry only after acquiring the SQLite writer lock.
