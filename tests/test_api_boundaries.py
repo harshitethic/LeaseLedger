@@ -73,6 +73,11 @@ class ApiBoundaryTests(unittest.TestCase):
         self.assertEqual(self.store.get(job.job_id)["status"], "queued")
         self.assertEqual(self.store.events(job.job_id)[0]["action"], "enqueued")
 
+    def test_worker_checks_handler_before_queue_processing(self):
+        for handler in (None, "module:function", 42, object()):
+            with self.subTest(handler=handler), self.assertRaises(ValueError):
+                Worker(self.store, handler)
+
     # INSERT_CASES
 
 if __name__ == "__main__":

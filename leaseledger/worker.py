@@ -43,6 +43,8 @@ class Worker:
             raise ValueError("Lease interval must be >=3 seconds")
         if not 0.01 <= poll_seconds <= 60:
             raise ValueError("Invalid poll interval")
+        if not callable(handler):
+            raise ValueError("Worker handler must be callable")
         self.store = store
         self.handler = handler
         self.name = name or f"worker-{uuid.uuid4().hex[:12]}"
