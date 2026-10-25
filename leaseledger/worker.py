@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import threading
 import uuid
 from dataclasses import dataclass
@@ -43,6 +44,8 @@ class Worker:
             raise ValueError("Lease interval must be >=3 seconds")
         if not 0.01 <= poll_seconds <= 60:
             raise ValueError("Invalid poll interval")
+        if not math.isfinite(backoff_seconds) or not 0 <= backoff_seconds <= 3600:
+            raise ValueError("Invalid worker backoff interval")
         self.store = store
         self.handler = handler
         self.name = name or f"worker-{uuid.uuid4().hex[:12]}"
@@ -67,8 +70,8 @@ class Worker:
                 return
 
     def run(self, *, max_jobs: int | None = None, stop_when_empty: bool = False) -> WorkerStats:
-        if max_jobs is not None and max_jobs < 1:
-            raise ValueError("max_jobs must be >=1")
+        if max_jobs is not None and (type(max_jobs) is not int or max_jobs < 1):
+            raise ValueError("max_jobs must be a positive integer")
         result = WorkerStats()
         while not self.stop_event.is_set():
             if max_jobs is not None and result.claimed >= max_jobs:
