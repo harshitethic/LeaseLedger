@@ -149,6 +149,16 @@ class StoreTests(unittest.TestCase):
         self.assertIsNone(self.queue.claim("B"))
         self.assertTrue(self.queue.complete(lease))
 
+    def test_heartbeat_rejects_ambiguous_extension_without_event(self):
+        job = self.queue.enqueue("work", {})
+        lease = self.queue.claim("first", lease_seconds=10)
+        before = self.queue.events(job.job_id)
+        for extension in (True, None, "5", float("nan")):
+            with self.subTest(extend_seconds=extension), self.assertRaises(ValueError):
+                self.queue.heartbeat(lease, extend_seconds=extension)
+        self.assertEqual(self.queue.events(job.job_id), before)
+        self.assertTrue(self.queue.complete(lease))
+
     def test_failure_retry_has_backoff_then_dead_letter(self):
         job = self.queue.enqueue("w", {}, max_attempts=3)
         for index, delay in enumerate((2, 4, 8), start=1):
