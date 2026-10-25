@@ -48,6 +48,13 @@ class ApiBoundaryTests(unittest.TestCase):
                 self.store.claim(owner)
         self.assertEqual(self.store.get(job.job_id)["status"], "queued")
 
+    def test_claim_topic_uses_enqueue_topic_syntax(self):
+        job = self.store.enqueue("valid.topic", {})
+        for topic in ("has spaces", "../escape", "\n", 44, [], ""):
+            with self.subTest(topic=topic), self.assertRaises(ValueError):
+                self.store.claim("worker", topic=topic)
+        self.assertEqual(self.store.claim("worker", topic="valid.topic").job_id, job.job_id)
+
     # INSERT_CASES
 
 if __name__ == "__main__":
