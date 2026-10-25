@@ -188,5 +188,27 @@ class StoreTests(unittest.TestCase):
             self.queue.enqueue("valid", {})
 
 
+    def test_boolean_timing_values_are_rejected(self):
+        import tempfile
+        from pathlib import Path
+        from leaseledger import Store
+
+        with tempfile.TemporaryDirectory() as directory:
+            store = Store(Path(directory) / "timing.db")
+            with self.assertRaises(ValueError):
+                store.enqueue("task", {}, delay=True)
+            job = store.enqueue("task", {})
+            with self.assertRaises(ValueError):
+                store.claim("worker", lease_seconds=True)
+            lease = store.claim("worker")
+            self.assertEqual(lease.job_id, job.job_id)
+            with self.assertRaises(ValueError):
+                store.heartbeat(lease, extend_seconds=True)
+            with self.assertRaises(ValueError):
+                store.fail(lease, "failed", base_delay=True)
+            with self.assertRaises(ValueError):
+                store.fail(lease, "failed", max_delay=True)
+            self.assertTrue(store.complete(lease))
+
 if __name__ == "__main__":
     unittest.main()
