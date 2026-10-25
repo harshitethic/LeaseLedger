@@ -55,6 +55,12 @@ class WorkerTests(unittest.TestCase):
             Worker(self.store, lambda _: None, poll_seconds=0)
         with self.assertRaises(ValueError):
             Worker(self.store, lambda _: None).run(max_jobs=0)
+        for max_jobs in (True, 0.5, float("nan"), float("inf")):
+            with self.subTest(max_jobs=max_jobs), self.assertRaises(ValueError):
+                Worker(self.store, lambda _: None).run(max_jobs=max_jobs)
+        for interval in (-1, float("nan"), float("inf"), 3601):
+            with self.subTest(backoff=interval), self.assertRaises(ValueError):
+                Worker(self.store, lambda _: None, backoff_seconds=interval)
 
 
 if __name__ == "__main__":
