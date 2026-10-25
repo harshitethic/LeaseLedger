@@ -176,7 +176,12 @@ class Store:
             return EnqueueResult(int(row["id"]), False)
 
     def claim(self, owner: str, *, lease_seconds: float = 30, topic: str | None = None) -> Lease | None:
-        if not 1 <= len(owner) <= 100 or not 1 <= lease_seconds <= 86400 or not math.isfinite(lease_seconds):
+        if (
+            not 1 <= len(owner) <= 100
+            or type(lease_seconds) not in (int, float)
+            or not math.isfinite(lease_seconds)
+            or not 1 <= lease_seconds <= 86400
+        ):
             raise ValueError("Invalid lease parameters")
         if topic is not None and not 1 <= len(topic) <= 100:
             raise ValueError("Invalid topic")
