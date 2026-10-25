@@ -45,9 +45,11 @@ class Worker:
             raise ValueError("Invalid poll interval")
         if not callable(handler):
             raise ValueError("Worker handler must be callable")
+        if name is not None and not Store._valid_owner(name):
+            raise ValueError("Invalid worker name")
         self.store = store
         self.handler = handler
-        self.name = name or f"worker-{uuid.uuid4().hex[:12]}"
+        self.name = name if name is not None else f"worker-{uuid.uuid4().hex[:12]}"
         self.topic = topic
         self.lease_seconds = lease_seconds
         self.poll_seconds = poll_seconds

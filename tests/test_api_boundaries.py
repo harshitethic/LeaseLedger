@@ -78,6 +78,12 @@ class ApiBoundaryTests(unittest.TestCase):
             with self.subTest(handler=handler), self.assertRaises(ValueError):
                 Worker(self.store, handler)
 
+    def test_worker_rejects_invalid_names_before_running(self):
+        for name in ("", "x" * 101, "worker\nspoof", 3, b"worker"):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                Worker(self.store, lambda _: None, name=name)
+        self.assertTrue(Worker(self.store, lambda _: None).name.startswith("worker-"))
+
     # INSERT_CASES
 
 if __name__ == "__main__":
