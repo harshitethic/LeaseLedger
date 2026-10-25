@@ -79,6 +79,9 @@ class StoreTests(unittest.TestCase):
             {"max_attempts": 1.5},
             {"max_attempts": True},
             {"delay": -1},
+            {"delay": True},
+            {"delay": "3"},
+            {"delay": None},
             {"delay": float("inf")},
             {"key": ""},
         ):
