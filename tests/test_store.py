@@ -26,6 +26,16 @@ class StoreTests(unittest.TestCase):
         self.path = Path(self.temp.name) / "jobs.db"
         self.queue = Store(self.path, clock=self.clock)
 
+    def test_job_ids_reject_boolean_and_fractional_aliases(self):
+        first = self.queue.enqueue("x", {})
+        self.assertEqual(self.queue.get(first.job_id)["id"], first.job_id)
+        for bad in (True, False, 1.0, 0, -1, "1"):
+            with self.subTest(job_id=bad):
+                for method in (self.queue.get, self.queue.events, self.queue.requeue_dead):
+                    with self.assertRaises(ValueError):
+                        method(bad)
+        self.assertEqual(self.queue.stats()["queued"], 1)
+
     def test_empty_stats_and_no_claim(self):
         self.assertEqual(self.queue.stats(), {"queued": 0, "leased": 0, "done": 0, "dead": 0})
         self.assertIsNone(self.queue.claim("worker"))
