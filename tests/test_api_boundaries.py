@@ -84,6 +84,12 @@ class ApiBoundaryTests(unittest.TestCase):
                 Worker(self.store, lambda _: None, name=name)
         self.assertTrue(Worker(self.store, lambda _: None).name.startswith("worker-"))
 
+    def test_worker_topic_validation_matches_store(self):
+        for topic in ("", "invalid topic", "../escape", 42, "\n"):
+            with self.subTest(topic=topic), self.assertRaises(ValueError):
+                Worker(self.store, lambda _: None, topic=topic)
+        self.assertEqual(Worker(self.store, lambda _: None, topic="ok.topic").topic, "ok.topic")
+
     # INSERT_CASES
 
 if __name__ == "__main__":
