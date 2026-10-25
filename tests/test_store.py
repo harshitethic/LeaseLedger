@@ -63,7 +63,11 @@ class StoreTests(unittest.TestCase):
                 self.queue.enqueue(topic, {})
         for opts in (
             {"priority": 1001},
+            {"priority": 1.5},
+            {"priority": True},
             {"max_attempts": 0},
+            {"max_attempts": 1.5},
+            {"max_attempts": True},
             {"delay": -1},
             {"delay": float("inf")},
             {"key": ""},
