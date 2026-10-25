@@ -187,7 +187,6 @@ class StoreTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.queue.enqueue("valid", {})
 
-
     def test_boolean_timing_values_are_rejected(self):
         import tempfile
         from pathlib import Path
@@ -209,6 +208,7 @@ class StoreTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 store.fail(lease, "failed", max_delay=True)
             self.assertTrue(store.complete(lease))
+
 
 if __name__ == "__main__":
     unittest.main()
