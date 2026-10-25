@@ -16,6 +16,12 @@ class ApiBoundaryTests(unittest.TestCase):
                 self.store.enqueue(value, {})
         self.assertEqual(self.store.stats()["queued"], 0)
 
+    def test_enqueue_rejects_non_string_idempotency_keys(self):
+        for value in (1, False, ["id"], {"key": "x"}, b"key"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                self.store.enqueue("work", {}, key=value)
+        self.assertEqual(self.store.stats()["queued"], 0)
+
     # INSERT_CASES
 
 if __name__ == "__main__":

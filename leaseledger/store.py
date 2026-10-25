@@ -152,7 +152,7 @@ class Store:
     ) -> EnqueueResult:
         if not self._valid_topic(topic):
             raise ValueError("Invalid topic")
-        if key is not None and not 1 <= len(key) <= 200:
+        if key is not None and (not isinstance(key, str) or not 1 <= len(key) <= 200):
             raise ValueError("Invalid idempotency key")
         if (
             not -1000 <= priority <= 1000
