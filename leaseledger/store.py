@@ -132,6 +132,14 @@ class Store:
             (job_id, action, actor, details[:500] if details else None, now),
         )
 
+    @staticmethod
+    def _valid_topic(value: Any) -> bool:
+        return (
+            isinstance(value, str)
+            and 1 <= len(value) <= 100
+            and all(c.isalnum() or c in "_-.:" for c in value)
+        )
+
     def enqueue(
         self,
         topic: str,
@@ -142,14 +150,16 @@ class Store:
         max_attempts: int = 3,
         delay: float = 0,
     ) -> EnqueueResult:
-        if not 1 <= len(topic) <= 100 or not all(c.isalnum() or c in "_-.:" for c in topic):
+        if not self._valid_topic(topic):
             raise ValueError("Invalid topic")
-        if key is not None and not 1 <= len(key) <= 200:
+        if key is not None and (not isinstance(key, str) or not 1 <= len(key) <= 200):
             raise ValueError("Invalid idempotency key")
+        if type(priority) is not int:
+            raise ValueError("Priority must be an integer")
+        if type(max_attempts) is not int:
+            raise ValueError("Maximum attempts must be an integer")
         if (
-            type(priority) is not int
-            or type(max_attempts) is not int
-            or not -1000 <= priority <= 1000
+            not -1000 <= priority <= 1000
             or not 1 <= max_attempts <= 100
             or type(delay) not in (int, float)
             or not math.isfinite(delay)
@@ -175,15 +185,23 @@ class Store:
                 raise RuntimeError("Idempotent enqueue violated unique key lookup")
             return EnqueueResult(int(row["id"]), False)
 
+    @staticmethod
+    def _valid_owner(value: Any) -> bool:
+        return (
+            isinstance(value, str)
+            and 1 <= len(value) <= 100
+            and not any(ord(char) < 32 or ord(char) == 127 for char in value)
+        )
+
     def claim(self, owner: str, *, lease_seconds: float = 30, topic: str | None = None) -> Lease | None:
         if (
-            not 1 <= len(owner) <= 100
+            not self._valid_owner(owner)
             or type(lease_seconds) not in (int, float)
-            or not math.isfinite(lease_seconds)
             or not 1 <= lease_seconds <= 86400
+            or not math.isfinite(lease_seconds)
         ):
             raise ValueError("Invalid lease parameters")
-        if topic is not None and not 1 <= len(topic) <= 100:
+        if topic is not None and not self._valid_topic(topic):
             raise ValueError("Invalid topic")
         while True:
             with self._write() as db:
@@ -282,6 +300,8 @@ class Store:
             return ok
 
     def fail(self, lease: Lease, reason: str, *, base_delay: float = 1.0, max_delay: float = 3600.0) -> bool:
+        if not isinstance(reason, str):
+            raise ValueError("Failure reason must be a string")
         if (
             not math.isfinite(base_delay)
             or not math.isfinite(max_delay)
@@ -310,12 +330,12 @@ class Store:
             return True
 
     @staticmethod
-    def _require_job_id(job_id: int) -> None:
-        if type(job_id) is not int or job_id < 1:
-            raise ValueError("Job ID must be a positive integer")
+    def _valid_job_id(value: Any) -> bool:
+        return type(value) is int and value > 0
 
     def requeue_dead(self, job_id: int) -> bool:
-        self._require_job_id(job_id)
+        if not self._valid_job_id(job_id):
+            raise ValueError("Job ID must be a positive integer")
         with self._write() as db:
             now = self._now()
             changed = (
@@ -332,7 +352,8 @@ class Store:
             return changed
 
     def get(self, job_id: int) -> dict[str, Any] | None:
-        self._require_job_id(job_id)
+        if not self._valid_job_id(job_id):
+            raise ValueError("Job ID must be a positive integer")
         with self._connection() as db:
             row = db.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
             if row is None:
@@ -342,7 +363,8 @@ class Store:
             return result
 
     def events(self, job_id: int) -> list[dict[str, Any]]:
-        self._require_job_id(job_id)
+        if not self._valid_job_id(job_id):
+            raise ValueError("Job ID must be a positive integer")
         with self._connection() as db:
             return [
                 dict(x)
