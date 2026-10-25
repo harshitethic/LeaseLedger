@@ -132,6 +132,14 @@ class Store:
             (job_id, action, actor, details[:500] if details else None, now),
         )
 
+    @staticmethod
+    def _valid_topic(value: Any) -> bool:
+        return (
+            isinstance(value, str)
+            and 1 <= len(value) <= 100
+            and all(c.isalnum() or c in "_-.:" for c in value)
+        )
+
     def enqueue(
         self,
         topic: str,
@@ -142,7 +150,7 @@ class Store:
         max_attempts: int = 3,
         delay: float = 0,
     ) -> EnqueueResult:
-        if not 1 <= len(topic) <= 100 or not all(c.isalnum() or c in "_-.:" for c in topic):
+        if not self._valid_topic(topic):
             raise ValueError("Invalid topic")
         if key is not None and not 1 <= len(key) <= 200:
             raise ValueError("Invalid idempotency key")
