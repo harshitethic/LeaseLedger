@@ -41,6 +41,13 @@ class ApiBoundaryTests(unittest.TestCase):
                 self.store.claim(value)
         self.assertEqual(self.store.get(job.job_id)["status"], "queued")
 
+    def test_claim_owner_rejects_control_characters(self):
+        job = self.store.enqueue("work", {})
+        for owner in ("worker\nspoof", "worker\x00hidden", "worker\r", "worker\t"):
+            with self.subTest(owner=repr(owner)), self.assertRaises(ValueError):
+                self.store.claim(owner)
+        self.assertEqual(self.store.get(job.job_id)["status"], "queued")
+
     # INSERT_CASES
 
 if __name__ == "__main__":

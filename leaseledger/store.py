@@ -186,7 +186,11 @@ class Store:
 
     @staticmethod
     def _valid_owner(value: Any) -> bool:
-        return isinstance(value, str) and 1 <= len(value) <= 100
+        return (
+            isinstance(value, str)
+            and 1 <= len(value) <= 100
+            and not any(ord(char) < 32 or ord(char) == 127 for char in value)
+        )
 
     def claim(self, owner: str, *, lease_seconds: float = 30, topic: str | None = None) -> Lease | None:
         if not self._valid_owner(owner) or not 1 <= lease_seconds <= 86400 or not math.isfinite(lease_seconds):
