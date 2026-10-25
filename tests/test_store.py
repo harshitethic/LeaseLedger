@@ -196,6 +196,9 @@ class StoreTests(unittest.TestCase):
             self.queue.claim("")
         with self.assertRaises(ValueError):
             self.queue.claim("worker", lease_seconds=0)
+        for duration in (True, None, "5", float("nan")):
+            with self.subTest(duration=duration), self.assertRaises(ValueError):
+                self.queue.claim("worker", lease_seconds=duration)
         self.clock.value = float("nan")
         with self.assertRaises(ValueError):
             self.queue.enqueue("valid", {})
