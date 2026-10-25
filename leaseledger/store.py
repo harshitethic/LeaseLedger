@@ -184,8 +184,12 @@ class Store:
                 raise RuntimeError("Idempotent enqueue violated unique key lookup")
             return EnqueueResult(int(row["id"]), False)
 
+    @staticmethod
+    def _valid_owner(value: Any) -> bool:
+        return isinstance(value, str) and 1 <= len(value) <= 100
+
     def claim(self, owner: str, *, lease_seconds: float = 30, topic: str | None = None) -> Lease | None:
-        if not 1 <= len(owner) <= 100 or not 1 <= lease_seconds <= 86400 or not math.isfinite(lease_seconds):
+        if not self._valid_owner(owner) or not 1 <= lease_seconds <= 86400 or not math.isfinite(lease_seconds):
             raise ValueError("Invalid lease parameters")
         if topic is not None and not 1 <= len(topic) <= 100:
             raise ValueError("Invalid topic")

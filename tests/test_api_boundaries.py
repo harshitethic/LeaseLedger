@@ -34,6 +34,13 @@ class ApiBoundaryTests(unittest.TestCase):
                 self.store.enqueue("work", {}, max_attempts=value)
         self.assertTrue(self.store.enqueue("work", {}, max_attempts=1).created)
 
+    def test_claim_owner_rejects_non_strings_without_claiming(self):
+        job = self.store.enqueue("work", {})
+        for value in (None, 123, [], b"worker"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                self.store.claim(value)
+        self.assertEqual(self.store.get(job.job_id)["status"], "queued")
+
     # INSERT_CASES
 
 if __name__ == "__main__":
