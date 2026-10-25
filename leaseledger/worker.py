@@ -80,8 +80,8 @@ class Worker:
                 return
 
     def run(self, *, max_jobs: int | None = None, stop_when_empty: bool = False) -> WorkerStats:
-        if max_jobs is not None and max_jobs < 1:
-            raise ValueError("max_jobs must be >=1")
+        if max_jobs is not None and (type(max_jobs) is not int or max_jobs < 1):
+            raise ValueError("max_jobs must be a positive integer")
         result = WorkerStats()
         while not self.stop_event.is_set():
             if max_jobs is not None and result.claimed >= max_jobs:

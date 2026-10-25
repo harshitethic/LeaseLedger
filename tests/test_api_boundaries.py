@@ -96,6 +96,12 @@ class ApiBoundaryTests(unittest.TestCase):
                 Worker(self.store, lambda _: None, backoff_seconds=backoff)
         self.assertEqual(Worker(self.store, lambda _: None, backoff_seconds=0).backoff_seconds, 0)
 
+    def test_max_jobs_rejects_coercible_nonintegers(self):
+        worker = Worker(self.store, lambda _: None)
+        for max_jobs in (0, -1, True, 1.5, "2"):
+            with self.subTest(max_jobs=max_jobs), self.assertRaises(ValueError):
+                worker.run(max_jobs=max_jobs, stop_when_empty=True)
+
     # INSERT_CASES
 
 if __name__ == "__main__":
