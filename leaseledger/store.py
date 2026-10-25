@@ -156,6 +156,8 @@ class Store:
             raise ValueError("Invalid idempotency key")
         if type(priority) is not int:
             raise ValueError("Priority must be an integer")
+        if type(max_attempts) is not int:
+            raise ValueError("Maximum attempts must be an integer")
         if (
             not -1000 <= priority <= 1000
             or not 1 <= max_attempts <= 100

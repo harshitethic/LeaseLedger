@@ -28,6 +28,12 @@ class ApiBoundaryTests(unittest.TestCase):
                 self.store.enqueue("work", {}, priority=value)
         self.assertTrue(self.store.enqueue("work", {}, priority=-1000).created)
 
+    def test_max_attempts_rejects_fractional_and_boolean_values(self):
+        for value in (True, False, 2.5, "3", None):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                self.store.enqueue("work", {}, max_attempts=value)
+        self.assertTrue(self.store.enqueue("work", {}, max_attempts=1).created)
+
     # INSERT_CASES
 
 if __name__ == "__main__":
