@@ -102,6 +102,14 @@ class ApiBoundaryTests(unittest.TestCase):
             with self.subTest(max_jobs=max_jobs), self.assertRaises(ValueError):
                 worker.run(max_jobs=max_jobs, stop_when_empty=True)
 
+    def test_claim_lease_seconds_requires_real_numeric_duration(self):
+        job = self.store.enqueue("work", {})
+        for seconds in (None, "30", True, b"30", float("nan"), float("inf")):
+            with self.subTest(seconds=seconds), self.assertRaises(ValueError):
+                self.store.claim("worker", lease_seconds=seconds)
+        self.assertEqual(self.store.get(job.job_id)["status"], "queued")
+        self.assertEqual(self.store.claim("worker", lease_seconds=1.5).job_id, job.job_id)
+
     # INSERT_CASES
 
 if __name__ == "__main__":

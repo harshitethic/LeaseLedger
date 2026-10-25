@@ -193,7 +193,12 @@ class Store:
         )
 
     def claim(self, owner: str, *, lease_seconds: float = 30, topic: str | None = None) -> Lease | None:
-        if not self._valid_owner(owner) or not 1 <= lease_seconds <= 86400 or not math.isfinite(lease_seconds):
+        if (
+            not self._valid_owner(owner)
+            or type(lease_seconds) not in (int, float)
+            or not 1 <= lease_seconds <= 86400
+            or not math.isfinite(lease_seconds)
+        ):
             raise ValueError("Invalid lease parameters")
         if topic is not None and not self._valid_topic(topic):
             raise ValueError("Invalid topic")
