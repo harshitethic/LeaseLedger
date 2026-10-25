@@ -55,6 +55,15 @@ class ApiBoundaryTests(unittest.TestCase):
                 self.store.claim("worker", topic=topic)
         self.assertEqual(self.store.claim("worker", topic="valid.topic").job_id, job.job_id)
 
+    def test_fail_invalid_reason_does_not_mutate_active_lease(self):
+        job = self.store.enqueue("work", {})
+        lease = self.store.claim("worker")
+        for reason in (None, 42, {"message": "error"}):
+            with self.subTest(reason=reason), self.assertRaises(ValueError):
+                self.store.fail(lease, reason)
+        self.assertEqual(self.store.get(job.job_id)["status"], "leased")
+        self.assertTrue(self.store.fail(lease, "temporary", base_delay=0))
+
     # INSERT_CASES
 
 if __name__ == "__main__":

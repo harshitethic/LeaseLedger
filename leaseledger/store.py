@@ -290,6 +290,8 @@ class Store:
             return ok
 
     def fail(self, lease: Lease, reason: str, *, base_delay: float = 1.0, max_delay: float = 3600.0) -> bool:
+        if not isinstance(reason, str):
+            raise ValueError("Failure reason must be a string")
         if (
             not math.isfinite(base_delay)
             or not math.isfinite(max_delay)
