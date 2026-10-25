@@ -90,6 +90,12 @@ class ApiBoundaryTests(unittest.TestCase):
                 Worker(self.store, lambda _: None, topic=topic)
         self.assertEqual(Worker(self.store, lambda _: None, topic="ok.topic").topic, "ok.topic")
 
+    def test_worker_backoff_is_bounded_before_handler_failure(self):
+        for backoff in (-1, float("nan"), float("inf"), 3600.01, "5", None):
+            with self.subTest(backoff=backoff), self.assertRaises(ValueError):
+                Worker(self.store, lambda _: None, backoff_seconds=backoff)
+        self.assertEqual(Worker(self.store, lambda _: None, backoff_seconds=0).backoff_seconds, 0)
+
     # INSERT_CASES
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import threading
 import uuid
 from dataclasses import dataclass
@@ -49,6 +50,12 @@ class Worker:
             raise ValueError("Invalid worker name")
         if topic is not None and not Store._valid_topic(topic):
             raise ValueError("Invalid worker topic")
+        if (
+            not isinstance(backoff_seconds, (int, float))
+            or not math.isfinite(backoff_seconds)
+            or not 0 <= backoff_seconds <= 3600
+        ):
+            raise ValueError("Invalid worker backoff interval")
         self.store = store
         self.handler = handler
         self.name = name if name is not None else f"worker-{uuid.uuid4().hex[:12]}"
