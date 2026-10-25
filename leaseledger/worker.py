@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
+import math
 import threading
 import uuid
 from dataclasses import dataclass
@@ -44,6 +45,8 @@ class Worker:
             raise ValueError("Lease interval must be >=3 seconds")
         if not 0.01 <= poll_seconds <= 60:
             raise ValueError("Invalid poll interval")
+        if not math.isfinite(backoff_seconds) or not 0 <= backoff_seconds <= 3600:
+            raise ValueError("Invalid retry backoff")
         if not math.isfinite(backoff_seconds) or not 0 <= backoff_seconds <= 3600:
             raise ValueError("Invalid worker backoff interval")
         self.store = store
