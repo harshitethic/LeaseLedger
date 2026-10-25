@@ -151,6 +151,7 @@ class Store:
             or type(max_attempts) is not int
             or not -1000 <= priority <= 1000
             or not 1 <= max_attempts <= 100
+            or type(delay) not in (int, float)
             or not math.isfinite(delay)
             or not 0 <= delay <= 86400 * 365
         ):
