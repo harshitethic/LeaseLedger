@@ -303,7 +303,9 @@ class Store:
         if not isinstance(reason, str):
             raise ValueError("Failure reason must be a string")
         if (
-            not math.isfinite(base_delay)
+            type(base_delay) not in (int, float)
+            or type(max_delay) not in (int, float)
+            or not math.isfinite(base_delay)
             or not math.isfinite(max_delay)
             or base_delay < 0
             or max_delay < base_delay
@@ -331,7 +333,7 @@ class Store:
 
     @staticmethod
     def _valid_job_id(value: Any) -> bool:
-        return type(value) is int and value > 0
+        return type(value) is int and 0 < value <= (1 << 63) - 1
 
     def requeue_dead(self, job_id: int) -> bool:
         if not self._valid_job_id(job_id):

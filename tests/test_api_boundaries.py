@@ -112,6 +112,25 @@ class ApiBoundaryTests(unittest.TestCase):
         self.assertEqual(self.store.get(job.job_id)["status"], "queued")
         self.assertEqual(self.store.claim("worker", lease_seconds=1.5).job_id, job.job_id)
 
+    def test_fail_backoff_rejects_non_numeric_and_boolean_values(self):
+        job = self.store.enqueue("work", {})
+        lease = self.store.claim("worker")
+        for invalid in (None, "1", True, False, [], {}):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                self.store.fail(lease, "retry", base_delay=invalid)
+            with self.subTest(max_delay=invalid), self.assertRaises(ValueError):
+                self.store.fail(lease, "retry", max_delay=invalid)
+        self.assertEqual(self.store.get(job.job_id)["status"], "leased")
+        self.assertTrue(self.store.fail(lease, "retry", base_delay=0.5, max_delay=2))
+
+    def test_job_ids_above_sqlite_signed_range_raise_value_error(self):
+        job = self.store.enqueue("work", {})
+        for job_id in ((1 << 63), (1 << 64), 10**100):
+            for method in (self.store.get, self.store.events, self.store.requeue_dead):
+                with self.subTest(job_id=job_id, method=method.__name__), self.assertRaises(ValueError):
+                    method(job_id)
+        self.assertEqual(self.store.get(job.job_id)["status"], "queued")
+
     # INSERT_CASES
 
 
