@@ -333,7 +333,7 @@ class Store:
 
     @staticmethod
     def _valid_job_id(value: Any) -> bool:
-        return type(value) is int and value > 0
+        return type(value) is int and 0 < value <= (1 << 63) - 1
 
     def requeue_dead(self, job_id: int) -> bool:
         if not self._valid_job_id(job_id):
