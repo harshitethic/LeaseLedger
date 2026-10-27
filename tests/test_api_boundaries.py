@@ -125,7 +125,7 @@ class ApiBoundaryTests(unittest.TestCase):
 
     def test_job_ids_above_sqlite_signed_range_raise_value_error(self):
         job = self.store.enqueue("work", {})
-        for job_id in ((1 << 63), (1 << 64), 10 ** 100):
+        for job_id in ((1 << 63), (1 << 64), 10**100):
             for method in (self.store.get, self.store.events, self.store.requeue_dead):
                 with self.subTest(job_id=job_id, method=method.__name__), self.assertRaises(ValueError):
                     method(job_id)
