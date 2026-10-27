@@ -303,7 +303,9 @@ class Store:
         if not isinstance(reason, str):
             raise ValueError("Failure reason must be a string")
         if (
-            not math.isfinite(base_delay)
+            type(base_delay) not in (int, float)
+            or type(max_delay) not in (int, float)
+            or not math.isfinite(base_delay)
             or not math.isfinite(max_delay)
             or base_delay < 0
             or max_delay < base_delay
