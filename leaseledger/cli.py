@@ -20,7 +20,11 @@ def _trusted_handler(spec: str) -> Callable[[Any], Any]:
     module, name = spec.split(":", 1)
     if not module or not name.isidentifier():
         raise ValueError("Invalid handler specification")
-    fn = getattr(importlib.import_module(module), name)
+    imported = importlib.import_module(module)
+    try:
+        fn = getattr(imported, name)
+    except AttributeError as exc:
+        raise ValueError("Handler function does not exist") from exc
     if not callable(fn):
         raise ValueError("Handler is not callable")
     return fn
