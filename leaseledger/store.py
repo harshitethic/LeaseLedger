@@ -121,7 +121,10 @@ class Store:
 
     @staticmethod
     def _encode(payload: Any) -> str:
-        text = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+        try:
+            text = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+        except (TypeError, ValueError, OverflowError, RecursionError) as exc:
+            raise ValueError("Job payload must be JSON-serializable with finite values") from exc
         if len(text.encode("utf-8")) > 65536:
             raise ValueError("Job payload exceeds 64 KiB")
         return text
