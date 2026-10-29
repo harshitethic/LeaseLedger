@@ -40,9 +40,17 @@ class Worker:
         poll_seconds: float = 0.5,
         backoff_seconds: float = 1,
     ) -> None:
-        if not 3 <= lease_seconds <= 86400:
+        if (
+            type(lease_seconds) not in (int, float)
+            or not math.isfinite(lease_seconds)
+            or not 3 <= lease_seconds <= 86400
+        ):
             raise ValueError("Lease interval must be >=3 seconds")
-        if not 0.01 <= poll_seconds <= 60:
+        if (
+            type(poll_seconds) not in (int, float)
+            or not math.isfinite(poll_seconds)
+            or not 0.01 <= poll_seconds <= 60
+        ):
             raise ValueError("Invalid poll interval")
         if not callable(handler):
             raise ValueError("Worker handler must be callable")

@@ -15,10 +15,10 @@ from .worker import Worker
 
 def _trusted_handler(spec: str) -> Callable[[Any], Any]:
     """Import explicitly user-selected trusted Python code (not untrusted jobs)."""
-    if ":" not in spec:
+    if not isinstance(spec, str) or spec.count(":") != 1:
         raise ValueError("Handler must look like module:function")
     module, name = spec.split(":", 1)
-    if not module or not name.isidentifier():
+    if not all(part.isidentifier() for part in module.split(".")) or not name.isidentifier():
         raise ValueError("Invalid handler specification")
     imported = importlib.import_module(module)
     try:
