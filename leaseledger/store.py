@@ -55,7 +55,7 @@ class Store:
     def _now(self) -> float:
         observed = self.clock()
         if type(observed) not in (int, float):
-            raise ValueError('Clock must return a numeric Unix timestamp')
+            raise ValueError("Clock must return a numeric Unix timestamp")
         value = float(observed)
         if not math.isfinite(value) or value < 0:
             raise ValueError("Clock must return a positive finite Unix timestamp")
