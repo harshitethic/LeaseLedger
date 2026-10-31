@@ -59,7 +59,7 @@ class Worker:
         if topic is not None and not Store._valid_topic(topic):
             raise ValueError("Invalid worker topic")
         if (
-            not isinstance(backoff_seconds, (int, float))
+            type(backoff_seconds) not in (int, float)
             or not math.isfinite(backoff_seconds)
             or not 0 <= backoff_seconds <= 3600
         ):
