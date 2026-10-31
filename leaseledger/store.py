@@ -123,9 +123,10 @@ class Store:
     def _encode(payload: Any) -> str:
         try:
             text = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+            size = len(text.encode("utf-8"))
         except (TypeError, ValueError, OverflowError, RecursionError) as exc:
             raise ValueError("Job payload must be JSON-serializable with finite values") from exc
-        if len(text.encode("utf-8")) > 65536:
+        if size > 65536:
             raise ValueError("Job payload exceeds 64 KiB")
         return text
 
@@ -158,7 +159,11 @@ class Store:
     ) -> EnqueueResult:
         if not self._valid_topic(topic):
             raise ValueError("Invalid topic")
-        if key is not None and (not isinstance(key, str) or not 1 <= len(key) <= 200):
+        if key is not None and (
+            not isinstance(key, str)
+            or not 1 <= len(key) <= 200
+            or any(0xD800 <= ord(char) <= 0xDFFF for char in key)
+        ):
             raise ValueError("Invalid idempotency key")
         if type(priority) is not int:
             raise ValueError("Priority must be an integer")
@@ -196,7 +201,10 @@ class Store:
         return (
             isinstance(value, str)
             and 1 <= len(value) <= 100
-            and not any(ord(char) < 32 or ord(char) == 127 for char in value)
+            and not any(
+                ord(char) < 32 or ord(char) == 127 or 0xD800 <= ord(char) <= 0xDFFF
+                for char in value
+            )
         )
 
     def claim(self, owner: str, *, lease_seconds: float = 30, topic: str | None = None) -> Lease | None:
@@ -308,6 +316,8 @@ class Store:
     def fail(self, lease: Lease, reason: str, *, base_delay: float = 1.0, max_delay: float = 3600.0) -> bool:
         if not isinstance(reason, str):
             raise ValueError("Failure reason must be a string")
+        if any(0xD800 <= ord(char) <= 0xDFFF for char in reason):
+            raise ValueError("Failure reason must be valid UTF-8 text")
         if (
             type(base_delay) not in (int, float)
             or type(max_delay) not in (int, float)
