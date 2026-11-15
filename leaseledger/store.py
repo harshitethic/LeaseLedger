@@ -201,10 +201,7 @@ class Store:
         return (
             isinstance(value, str)
             and 1 <= len(value) <= 100
-            and not any(
-                ord(char) < 32 or ord(char) == 127 or 0xD800 <= ord(char) <= 0xDFFF
-                for char in value
-            )
+            and not any(ord(char) < 32 or ord(char) == 127 or 0xD800 <= ord(char) <= 0xDFFF for char in value)
         )
 
     def claim(self, owner: str, *, lease_seconds: float = 30, topic: str | None = None) -> Lease | None:
