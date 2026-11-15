@@ -1,4 +1,5 @@
 """Handlers must do their work before a durable job is acknowledged."""
+
 from __future__ import annotations
 
 import asyncio
@@ -34,6 +35,7 @@ class SynchronousHandlerTests(unittest.TestCase):
 
     def test_coroutine_returned_from_sync_wrapper_fails_the_job(self):
         invoked = []
+
         def wrapper(payload):
             invoked.append(payload)
             return asyncio.sleep(0)
