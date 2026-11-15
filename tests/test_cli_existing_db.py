@@ -48,9 +48,8 @@ class ExistingDatabaseCliTests(unittest.TestCase):
                     self.assertFalse(destination.exists())
                     with sqlite3.connect(database) as connection:
                         tables = {
-                            row[0] for row in connection.execute(
-                                "SELECT name FROM sqlite_master WHERE type='table'"
-                            )
+                            row[0]
+                            for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
                         }
                         self.assertEqual(tables, {"unrelated"})
 
