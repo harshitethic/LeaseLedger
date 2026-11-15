@@ -6,8 +6,11 @@ import argparse
 import importlib
 import json
 import signal
+import sqlite3
+from contextlib import closing
 from pathlib import Path
 from typing import Any, Callable
+from urllib.parse import quote
 
 from .store import Store
 from .worker import Worker
@@ -28,6 +31,27 @@ def _trusted_handler(spec: str) -> Callable[[Any], Any]:
     if not callable(fn):
         raise ValueError("Handler is not callable")
     return fn
+
+
+def _require_existing_queue(path: Path, parser: argparse.ArgumentParser) -> None:
+    """Do not let inspection or backup silently create a healthy, empty queue."""
+    if not path.is_file():
+        parser.error("An existing LeaseLedger database is required; run 'init' first")
+
+    # Open read-only, without CREATE; also reject unrelated SQLite databases.
+    uri = f"file:{quote(str(path.resolve()), safe='/')}?mode=ro"
+    try:
+        with closing(sqlite3.connect(uri, uri=True)) as connection:
+            tables = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('jobs', 'events')"
+                )
+            }
+    except sqlite3.DatabaseError:
+        parser.error("The selected file is not a readable LeaseLedger SQLite database")
+    if tables != {"jobs", "events"}:
+        parser.error("The selected SQLite database does not contain the LeaseLedger queue tables")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -63,6 +87,8 @@ def main(argv: list[str] | None = None) -> int:
     retry = commands.add_parser("retry")
     retry.add_argument("id", type=int)
     args = parser.parse_args(argv)
+    if args.command in {"verify", "backup"}:
+        _require_existing_queue(Path(args.db), parser)
     queue = Store(Path(args.db))
 
     if args.command == "init":
