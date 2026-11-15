@@ -393,22 +393,35 @@ class Store:
     def _has_queue_schema(db: sqlite3.Connection) -> bool:
         """A structurally valid SQLite file is not necessarily a usable queue."""
         tables = {
-            str(row[0]) for row in db.execute(
+            str(row[0])
+            for row in db.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('jobs', 'events')"
             )
         }
         if tables != {"jobs", "events"}:
             return False
         required_columns = {
-            "jobs": {"id", "topic", "payload", "status", "priority", "available_at",
-                     "attempts", "max_attempts", "lease_owner", "lease_until", "fence",
-                     "dedupe_key", "last_error", "created_at", "updated_at"},
+            "jobs": {
+                "id",
+                "topic",
+                "payload",
+                "status",
+                "priority",
+                "available_at",
+                "attempts",
+                "max_attempts",
+                "lease_owner",
+                "lease_until",
+                "fence",
+                "dedupe_key",
+                "last_error",
+                "created_at",
+                "updated_at",
+            },
             "events": {"id", "job_id", "action", "actor", "details", "occurred_at"},
         }
         return all(
-            required.issubset({
-                str(row[1]) for row in db.execute(f"PRAGMA table_info({table})")
-            })
+            required.issubset({str(row[1]) for row in db.execute(f"PRAGMA table_info({table})")})
             for table, required in required_columns.items()
         )
 
@@ -420,10 +433,7 @@ class Store:
             return {
                 "quick_check": check,
                 "foreign_key_violations": foreign_key_violations,
-                "healthy": (
-                    check == "ok" and foreign_key_violations == 0
-                    and self._has_queue_schema(db)
-                ),
+                "healthy": (check == "ok" and foreign_key_violations == 0 and self._has_queue_schema(db)),
             }
 
     def backup_to(self, destination: str | Path) -> Path:
