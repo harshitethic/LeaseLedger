@@ -389,15 +389,51 @@ class Store:
                 )
             ]
 
+    @staticmethod
+    def _has_queue_schema(db: sqlite3.Connection) -> bool:
+        """A structurally valid SQLite file is not necessarily a usable queue."""
+        tables = {
+            str(row[0])
+            for row in db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('jobs', 'events')"
+            )
+        }
+        if tables != {"jobs", "events"}:
+            return False
+        required_columns = {
+            "jobs": {
+                "id",
+                "topic",
+                "payload",
+                "status",
+                "priority",
+                "available_at",
+                "attempts",
+                "max_attempts",
+                "lease_owner",
+                "lease_until",
+                "fence",
+                "dedupe_key",
+                "last_error",
+                "created_at",
+                "updated_at",
+            },
+            "events": {"id", "job_id", "action", "actor", "details", "occurred_at"},
+        }
+        return all(
+            required.issubset({str(row[1]) for row in db.execute(f"PRAGMA table_info({table})")})
+            for table, required in required_columns.items()
+        )
+
     def verify_integrity(self) -> dict[str, Any]:
-        """Check SQLite pages and relational integrity without modifying jobs."""
+        """Check SQLite pages, foreign keys and required queue schema."""
         with self._connection() as db:
             check = str(db.execute("PRAGMA quick_check").fetchone()[0])
             foreign_key_violations = len(db.execute("PRAGMA foreign_key_check").fetchall())
             return {
                 "quick_check": check,
                 "foreign_key_violations": foreign_key_violations,
-                "healthy": check == "ok" and foreign_key_violations == 0,
+                "healthy": (check == "ok" and foreign_key_violations == 0 and self._has_queue_schema(db)),
             }
 
     def backup_to(self, destination: str | Path) -> Path:
@@ -429,6 +465,8 @@ class Store:
                         raise sqlite3.DatabaseError("Snapshot integrity verification failed")
                     if snapshot.execute("PRAGMA foreign_key_check").fetchone() is not None:
                         raise sqlite3.DatabaseError("Snapshot foreign-key verification failed")
+                    if not self._has_queue_schema(snapshot):
+                        raise sqlite3.DatabaseError("Snapshot is missing required queue tables or columns")
                     snapshot.execute("PRAGMA wal_checkpoint(TRUNCATE)")
                     # A standalone snapshot should not require a sidecar WAL
                     # to be restored, so convert to rollback-journal mode.
