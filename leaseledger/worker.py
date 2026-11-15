@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import logging
 import math
 import threading
@@ -54,6 +55,10 @@ class Worker:
             raise ValueError("Invalid poll interval")
         if not callable(handler):
             raise ValueError("Worker handler must be callable")
+        if inspect.iscoroutinefunction(handler) or inspect.iscoroutinefunction(
+            getattr(handler, "__call__", None)
+        ):
+            raise ValueError("Worker handler must be synchronous; async handlers are not supported")
         if name is not None and not Store._valid_owner(name):
             raise ValueError("Invalid worker name")
         if topic is not None and not Store._valid_topic(topic):
@@ -111,7 +116,13 @@ class Worker:
             thread.start()
             error: str | None = None
             try:
-                self.handler(lease.payload)
+                outcome = self.handler(lease.payload)
+                if inspect.isawaitable(outcome):
+                    # Close coroutine objects so rejecting an unsupported async
+                    # result does not also emit an un-awaited coroutine warning.
+                    if inspect.iscoroutine(outcome):
+                        outcome.close()
+                    raise TypeError("Worker handler returned an awaitable; job was not completed")
             except Exception as exc:
                 error = f"{type(exc).__name__}: {exc}"[:500]
             finally:
