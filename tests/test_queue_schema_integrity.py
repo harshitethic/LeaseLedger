@@ -1,4 +1,5 @@
 """A healthy SQLite file may be an unusable queue after schema damage."""
+
 from __future__ import annotations
 
 import sqlite3
